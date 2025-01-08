@@ -115,10 +115,22 @@ class RayList:
     wavelength: np.ndarray
     incidence: np.ndarray
     intensity: np.ndarray
+    N: int = None
 
     @classmethod
     def from_list(cls, rays):
         N = len(rays)
+        if N == 0:
+            return cls(
+                mgeo.PointArray([[np.nan, np.nan, np.nan]]),
+                mgeo.VectorArray([[np.nan,np.nan,np.nan]]),
+                np.zeros((1,1)),
+                np.zeros(1),
+                np.zeros(1),
+                np.zeros(1),
+                np.zeros(1),
+                0,
+            )
         N_r = len(rays[0].path)
         points = np.zeros((N, 3))
         vectors = np.zeros((N, 3))
@@ -143,11 +155,8 @@ class RayList:
             wavelengths,
             incidences,
             intensities,
+            len(rays),
         )
-
-    @property
-    def N(self):
-        return len(self.point)
     
     def __getitem__(self, key):
         if isinstance(key, slice) or isinstance(key, list):
@@ -159,11 +168,12 @@ class RayList:
                 self.wavelength[key],
                 self.incidence[key],
                 self.intensity[key],
+                len(key),
             )
         return Ray(
             self.point[key],
             self.vector[key],
-            self.path[key],
+            tuple(self.path[key]),
             self.number[key],
             self.wavelength[key],
             self.incidence[key],
@@ -174,6 +184,8 @@ class RayList:
         return self.N
     
     def __iter__(self):
+        if self.N == 0:
+            return iter([])
         return (Ray(point=self.point[i],
                     vector=self.vector[i],
                     path=tuple(self.path[i]),
@@ -194,6 +206,7 @@ class RayList:
             self.wavelength,
             self.incidence,
             self.intensity,
+            self.N
         )
     
     def from_basis(self, r0, r, q):
@@ -208,13 +221,14 @@ class RayList:
             self.wavelength,
             self.incidence,
             self.intensity,
+            self.N
         )
 
     def rotate(self, q):
         """
-        Rotates the ray by the quaternion q.
+        Rotates the raylist by the quaternion q.
         """
-        return Ray(
+        return RayList(
             self.point.rotate(q),
             self.vector.rotate(q),
             self.path,
@@ -222,13 +236,14 @@ class RayList:
             self.wavelength,
             self.incidence,
             self.intensity,
+            self.N
         )
     
     def translate(self, t):
         """
         Rotates the ray by the vector t
         """
-        return Ray(
+        return RayList(
             self.point.translate(t),
             self.vector,
             self.path,
@@ -236,6 +251,7 @@ class RayList:
             self.wavelength,
             self.incidence,
             self.intensity,
+            self.N
         )
 
     def __copy__(self):
@@ -250,6 +266,7 @@ class RayList:
             self.wavelength.copy(),
             self.incidence.copy(),
             self.intensity.copy(),
+            self.N,
         )
 
     def __hash__(self):

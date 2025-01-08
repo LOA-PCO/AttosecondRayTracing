@@ -125,8 +125,9 @@ class OpticalChain:
                 prev = f"element {i-1}"
             pretty_str += f"    - Element {i}: {element.type} at distance {round(dist)} from {prev}\n"
             prev_pos = element.position
-        for i, detector in enumerate(self.detector):
-            pretty_str += f"    - Detector {i}: {detector.type} at distance {round(detector.position.norm)} from element {i}\n"
+        for i in self.detectors.keys():
+            detector = self.detectors[i]
+            pretty_str += f'    - Detector "{i}": {detector.type} at distance {round(detector.distance,3)} from element {detector.index % len(self.optical_elements)}\n'
         return pretty_str
     
     def __getitem__(self, i):
@@ -165,7 +166,13 @@ class OpticalChain:
 
     def __deepcopy__(self, memo):
         """Return another optical chain with the same source, optical elements and description-string as this one."""
-        return OpticalChain(copy.deepcopy(self.source_rays), copy.deepcopy(self.optical_elements), copy.copy(self.description))
+        return OpticalChain(copy.deepcopy(self.source_rays), copy.deepcopy(self.optical_elements), memo+"\n"+copy.copy(self.description))
+
+    def get_input_rays(self):
+        """
+        Returns the list of source rays.
+        """
+        return self.source_rays
 
     def get_output_rays(self, **kwargs):
         """
@@ -188,9 +195,43 @@ class OpticalChain:
             self._last_optical_elements_hash = current_optical_elements_hash
 
         return self._output_rays
+    
+    def get2dPoints(self, Detector = "Focus"):
+        """
+        Returns the 2D points of the detected rays on the detector.
+        """
+        if isinstance(Detector, str):
+            if Detector in self.detectors.keys():
+                Detector = self.detectors[Detector]
+            else:
+                raise ValueError('The "Detector"-argument must be a name of an existing detector or a Detector-object.')
+        return Detector.get_2D_points(self.get_output_rays()[Detector.index])[0]
+    
+    def get3dPoints(self, Detector = "Focus"):
+        """
+        Returns the 3D points of the detected rays on the detector.
+        """
+        if isinstance(Detector, str):
+            if Detector in self.detectors.keys():
+                Detector = self.detectors[Detector]
+            else:
+                raise ValueError('The "Detector"-argument must be a name of an existing detector or a Detector-object.')
+        return Detector.get_3D_points(self.get_output_rays()[Detector.index])
+    
+    def getDelays(self, Detector = "Focus"):
+        """
+        Returns the delays of the detected rays on the detector.
+        """
+        if isinstance(Detector, str):
+            if Detector in self.detectors.keys():
+                Detector = self.detectors[Detector]
+            else:
+                raise ValueError('The "Detector"-argument must be a name of an existing detector or a Detector-object.')
+        return Detector.get_Delays(self.get_output_rays()[Detector.index])
+    
     # %%  methods to (mis-)align the optical chain; just uses the corresponding methods of the OpticalElement class...
 
-    def shift_source(self, axis: (str, np.ndarray), distance: float):
+    def shift_source(self, axis: str|np.ndarray, distance: float):
         """
         Shift source ray bundle by distance (in mm) along the 'axis' specified as
         a lab-frame vector (numpy-array of length 3) or as one of the strings
@@ -265,7 +306,7 @@ class OpticalChain:
 
         self.source_rays = mgeo.TranslationRayList(self.source_rays, distance * mgeo.Normalize(translation_vector))
 
-    def tilt_source(self, axis: (str, np.ndarray), angle: float):
+    def tilt_source(self, axis: str|np.ndarray, angle: float):
         """
         Rotate source ray bundle by angle around an axis, specified as
         a lab-frame vector (numpy-array of length 3) or as one of the strings
@@ -342,7 +383,7 @@ class OpticalChain:
 
         self.source_rays = mgeo.RotationAroundAxisRayList(self.source_rays, rot_axis, np.deg2rad(angle))
 
-    def partial_realign(self, OEstart, OEstop, DistanceList, IncidenceAngleList, IncidencePlaneAngleList):
+    def partial_realign(self, OEstart: int, OEstop: int, DistanceList: list, IncidenceAngleList, IncidencePlaneAngleList):
         """
         This as-of-yet not-implemented method will realign only the parts of the optical chain that are between the elements
         OEstart and OEstop (both included).

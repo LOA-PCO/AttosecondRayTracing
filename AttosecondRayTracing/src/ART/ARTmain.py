@@ -57,7 +57,7 @@ def make_plots(OpticalChain, RayListAnalysed, Detector, SourceProperties, Detect
     """Go through the built-in plotting options."""
 
     if AnalysisOptions["plot_Render"]:
-        mplots.RayRenderGraph(
+        mplots.DrawSetup(
             OpticalChain,
             Detector.get_distance() * 1.2,
             AnalysisOptions["maxRaysToRender"],

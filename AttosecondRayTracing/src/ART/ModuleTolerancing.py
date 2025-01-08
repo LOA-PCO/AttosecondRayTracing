@@ -3,15 +3,51 @@ Provides functions for analysing the alignment tolerance of a system.
 
 Mostly it consists in mis-aligning the optical elements of the system and checking the impact on the focal spot and delays.
 
+There are two parts to this module:
+- Misaligning/deteriorating the optical elements of the system
+- Analysing the impact of these misalignments on the focal spot and delays
+
+The end goal is to have a simple function "GetTolerance" that will return the tolerance of the system to misalignments of each optical element.
+
 Created in Nov 2024
 
 @author: Andre Kalouguine
 """
 import numpy as np
 import matplotlib.pyplot as plt
+from copy import copy
 from scipy.stats import linregress
 
+import ARTcore.ModuleOpticalChain as moc
 
+
+def GetTolerance(OpticalChain,
+                 time_error=1.0,
+                 Detector = "Focus",
+                 n_iter = 5):
+    """
+    Returns the tolerance of the system to misalignments of each optical element.
+    It first constructs a normalisation vector:
+    For each optical element, for each degree of freedom, it iteratively calculates the required amplitude of misalignment to reach the time_error.
+    This gives a n-dimensional vector. The smaller the value, the more sensitive the system is to misalignments of this axis.
+    """
+    # Define the normalisation vector
+    normalisation_vector = np.zeros(len(OpticalChain.optical_elements) * 6)
+    misalignments = ["rotate_roll_by", "rotate_pitch_by", "rotate_yaw_by", "shift_along_normal", "shift_along_major", "shift_along_cross"]
+    for i in range(len(OpticalChain.optical_elements)):
+        for j in range(6):
+            # Misalign the optical element
+            misaligned_optical_elements = copy(OpticalChain.optical_elements)
+            misaligned_optical_chain = moc.OpticalChain(OpticalChain.source_rays, misaligned_optical_elements, "Misaligned "+OpticalChain.Description)
+            amplitude = 1e-3
+            for k in range(n_iter):
+                try:
+                    misaligned_optical_elements[i].__getattribute__(misalignments[j])(amplitude)
+                    rays = misaligned_optical_chain.get_output_rays()
+                except:
+                    amplitude /= 2
+                    continue
+                pass
 def fit_and_plot(ax, displacements, results, movement_label, index):
     # Convert data to numpy arrays for handling
     displacements = np.array(displacements)

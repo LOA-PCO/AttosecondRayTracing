@@ -1,6 +1,26 @@
 """
 Provides functions for analysis of the output ray-bundles calculated through ray-tracing, and also for the ART's standard visualization options.
 
+Implements the following functions:
+    - DrawSpotDiagram: Produces an interactive figure with the spot diagram on the selected Detector.
+    - DrawDelaySpots: Produces a an interactive figure with a spot diagram resulting from the RayListAnalysed
+    - _drawDelayGraph: Auxiliary function for DelayGraph.
+    - DrawMirrorProjection: Produce a plot of the ray impact points on the optical element with index 'ReflectionNumber'.
+    - DrawSetup: Renders an image of the Optical setup and the traced rays.
+    - DrawAsphericity: Displays a map of the asphericity of the mirror.
+    - DrawCaustics: Displays the caustics of the rays on the detector.
+
+It also implements the following methods:
+    -OpticalChain:
+        - render: Method to render the optical setup.
+        - drawSpotDiagram: Method to draw the spot diagram on the selected detector.
+        - drawDelaySpots: Method to draw the delay spots on the detector.
+        - drawMirrorProjection: Method to draw the mirror projection.
+        - drawCaustics: Method to draw the caustics on the detector.
+    -Mirror:
+        - drawAsphericity: Method to draw the asphericity of the mirror.
+
+
 Created in Apr 2020
 
 @author: Anthony Guillaume + Stefan Haessler + Andre Kalouguine
@@ -21,6 +41,7 @@ logger = logging.getLogger(__name__)
 import ARTcore.ModuleProcessing as mp
 import ARTcore.ModuleGeometry as mgeo
 import ARTcore.ModuleDetector as mdet
+import ARTcore.ModuleMirror as mmirror
 import ART.ModulePlottingMethods as mpm
 import ART.ModulePlottingUtilities as mpu
 from ART.ModulePlottingUtilities import Observable
@@ -32,7 +53,8 @@ from copy import copy
 
 
 # %% Spot diagram on detector
-def SpotDiagram(OpticalChain, DetectorName = "Focus", 
+def DrawSpotDiagram(OpticalChain, 
+                Detector = "Focus",
                 DrawAiryAndFourier=False, 
                 DrawFocalContour=False,
                 DrawFocal=False,
@@ -51,8 +73,8 @@ def SpotDiagram(OpticalChain, DetectorName = "Focus",
         RayListAnalysed : list(Ray)
             List of objects of the ModuleOpticalRay.Ray-class.
 
-        Detector : Detector
-            An object of the ModuleDetector.Detector-class.
+        Detector : Detector or str, optional
+            An object of the ModuleDetector.Detector-class or the name of the detector. The default is "Focus".
 
         DrawAiryAndFourier : bool, optional
             Whether to draw a circle with the Airy-spot-size. The default is False.
@@ -76,7 +98,9 @@ def SpotDiagram(OpticalChain, DetectorName = "Focus",
         fig : matlplotlib-figure-handle.
             Shows the interactive figure.
     """
-    Detector, Index = OpticalChain.detectors[DetectorName]
+    if isinstance(Detector, str):
+        Detector = OpticalChain.detectors[Detector]
+    Index = Detector.index
     movingDetector = copy(Detector) # We will move this detector when pressing left-right
     if Observer is None:
         detectorPosition = Observable(movingDetector.distance) # We will observe the distance of this detector
@@ -88,15 +112,15 @@ def SpotDiagram(OpticalChain, DetectorName = "Focus",
 
     RayListAnalysed = OpticalChain.get_output_rays()[Index]
 
-    NumericalAperture = man.ReturnNumericalAperture(RayListAnalysed, 1)  # NA determined from final ray bundle
+    NumericalAperture = man.GetNumericalAperture(RayListAnalysed, 1)  # NA determined from final ray bundle
     MaxWavelength = np.max([i.wavelength for i in RayListAnalysed])
     if DrawAiryAndFourier:
-        AiryRadius = man.ReturnAiryRadius(MaxWavelength, NumericalAperture) * 1e3  # in µm
+        AiryRadius = man.GetAiryRadius(MaxWavelength, NumericalAperture) * 1e3  # in µm
     else:
         AiryRadius = 0
     
     if DrawFocalContour or DrawFocal:
-        X,Y,Z = man.get_diffractionfocus(OpticalChain, movingDetector, Index)
+        X,Y,Z = man.GetDiffractionFocus(OpticalChain, movingDetector, Index)
         Z/=np.max(Z) 
 
     DectectorPoint2D_Xcoord, DectectorPoint2D_Ycoord, FocalSpotSize, SpotSizeSD = mpu._getDetectorPoints(
@@ -236,87 +260,16 @@ def SpotDiagram(OpticalChain, DetectorName = "Focus",
 
     return fig, detectorPosition
 
+moc.OpticalChain.drawSpotDiagram = DrawSpotDiagram
 
 # %% Delay graph on detector (3D spot diagram)
-def _drawDelayGraph(RayListAnalysed, Detector, Distance, DeltaFT, DrawAiryAndFourier=False, ColorCoded=None, fig=None):
-    """
-    Draws the 3D-delay-spot-diagram for a fixed detector. See more doc in the function below.
-    """
-    NumericalAperture = man.ReturnNumericalAperture(RayListAnalysed, 1)  # NA determined from final ray bundle
-    Wavelength = RayListAnalysed[0].wavelength
-    AiryRadius = man.ReturnAiryRadius(Wavelength, NumericalAperture) * 1e3  # in µm
-
-    DectectorPoint2D_Xcoord, DectectorPoint2D_Ycoord, FocalSpotSize, SpotSizeSD = mpu._getDetectorPoints(
-        RayListAnalysed, Detector
-    )
-
-    DelayList = Detector.get_Delays(RayListAnalysed)
-    DurationSD = mp.StandardDeviation(DelayList)
-
-    if ColorCoded == "Intensity":
-        IntensityList = [k.intensity for k in RayListAnalysed]
-    elif ColorCoded == "Incidence":
-        IncidenceList = [np.rad2deg(k.incidence) for k in RayListAnalysed]  # in degree
-
-    plt.ion()
-    if fig is None:
-        fig = plt.figure()
-    else:
-        fig.clear(keep_observers=True)
-
-    ax = Axes3D(fig)
-    fig.add_axes(ax)
-    ax.set_xlabel("X (µm)")
-    ax.set_ylabel("Y (µm)")
-    ax.set_zlabel("Delay (fs)")
-
-    labelLine = (
-        "{:.3f}".format(Distance)
-        + " mm\n"
-        + "{:.1f}".format(SpotSizeSD * 1e3)
-        + " \u03BCm SD\n"
-        + "{:.2f}".format(DurationSD)
-        + " fs SD"
-    )
-    if ColorCoded == "Intensity":
-        ax.scatter(DectectorPoint2D_Xcoord, DectectorPoint2D_Ycoord, DelayList, s=4, c=IntensityList, label=labelLine)
-        # plt.title('Delay + Intensity graph\n press left/right to move detector position')
-        ax.set_title("Delay + Intensity graph\n press left/right to move detector position")
-
-    elif ColorCoded == "Incidence":
-        ax.scatter(DectectorPoint2D_Xcoord, DectectorPoint2D_Ycoord, DelayList, s=4, c=IncidenceList, label=labelLine)
-        # plt.title('Delay + Incidence graph\n press left/right to move detector position')
-        ax.set_title("Delay + Incidence graph\n press left/right to move detector position")
-    else:
-        ax.scatter(DectectorPoint2D_Xcoord, DectectorPoint2D_Ycoord, DelayList, s=4, c=DelayList, label=labelLine)
-        # plt.title('Delay graph\n press left/right to move detector position')
-        ax.set_title("Delay graph\n press left/right to move detector position")
-
-    ax.legend(loc="upper right")
-
-    if DrawAiryAndFourier:
-        x = np.linspace(-AiryRadius, AiryRadius, 40)
-        z = np.linspace(np.mean(DelayList) - DeltaFT * 0.5, np.mean(DelayList) + DeltaFT * 0.5, 40)
-        x, z = np.meshgrid(x, z)
-        y = np.sqrt(AiryRadius**2 - x**2)
-        ax.plot_wireframe(x, y, z, color="grey", alpha=0.1)
-        ax.plot_wireframe(x, -y, z, color="grey", alpha=0.1)
-
-    axisLim = 1.1 * max(AiryRadius, 0.5 * FocalSpotSize * 1000)
-    ax.set_xlim(-axisLim, axisLim)
-    ax.set_ylim(-axisLim, axisLim)
-    # ax.set_zlim(-axisLim/3*10, axisLim/3*10) #same scaling as spatial axes 
-    
-    plt.show()
-    fig.canvas.draw()
-
-    return fig, NumericalAperture, AiryRadius, FocalSpotSize
-
-def DelayGraph(OpticalChain, DetectorName, DeltaFT: (int, float), 
-        DrawAiryAndFourier=False, 
-        ColorCoded=None,
-        Observer = None
-    ) -> plt.Figure:
+def DrawDelaySpots(OpticalChain, 
+                DeltaFT: tuple[int, float],
+                Detector = "Focus",
+                DrawAiryAndFourier=False, 
+                ColorCoded=None,
+                Observer = None
+                ) -> plt.Figure:
     """
     Produce a an interactive figure with a spot diagram resulting from the RayListAnalysed
     hitting the Detector, with the ray-delays shown in the 3rd dimension.
@@ -351,7 +304,11 @@ def DelayGraph(OpticalChain, DetectorName, DeltaFT: (int, float),
         fig : matlplotlib-figure-handle.
             Shows the interactive figure.
     """
-    Det, Index = OpticalChain.detectors[DetectorName]
+    if isinstance(Detector, str):
+        Det = OpticalChain.detectors[Detector]
+    else:
+        Det = Detector
+    Index = Det.index
     Detector = copy(Det)
     if Observer is None:
         detectorPosition = Observable(Detector.distance)
@@ -399,8 +356,85 @@ def DelayGraph(OpticalChain, DetectorName, DeltaFT: (int, float),
     return fig, Observable
 
 
+def _drawDelayGraph(RayListAnalysed, Detector, Distance, DeltaFT, DrawAiryAndFourier=False, ColorCoded=None, fig=None):
+    """
+    Draws the 3D-delay-spot-diagram for a fixed detector. See more doc in the function below.
+    """
+    NumericalAperture = man.GetNumericalAperture(RayListAnalysed, 1)  # NA determined from final ray bundle
+    Wavelength = RayListAnalysed[0].wavelength
+    AiryRadius = man.GetAiryRadius(Wavelength, NumericalAperture) * 1e3  # in µm
+
+    DectectorPoint2D_Xcoord, DectectorPoint2D_Ycoord, FocalSpotSize, SpotSizeSD = mpu._getDetectorPoints(
+        RayListAnalysed, Detector
+    )
+
+    DelayList = Detector.get_Delays(RayListAnalysed)
+    DurationSD = mp.StandardDeviation(DelayList)
+
+    if ColorCoded == "Intensity":
+        IntensityList = [k.intensity for k in RayListAnalysed]
+    elif ColorCoded == "Incidence":
+        IncidenceList = [np.rad2deg(k.incidence) for k in RayListAnalysed]  # in degree
+
+    plt.ion()
+    if fig is None:
+        fig = plt.figure()
+    else:
+        fig.clear(keep_observers=True)
+
+    ax = Axes3D(fig)
+    fig.add_axes(ax)
+    ax.set_xlabel("X (µm)")
+    ax.set_ylabel("Y (µm)")
+    ax.set_zlabel("Delay (fs)")
+
+    labelLine = (
+        "{:.3f}".format(Distance)
+        + " mm\n"
+        + "{:.1f}".format(SpotSizeSD * 1e3)
+        + " \u03BCm SD\n"
+        + "{:.2f}".format(DurationSD)
+        + " fs SD"
+    )
+    if ColorCoded == "Intensity":
+        ax.scatter(DectectorPoint2D_Xcoord, DectectorPoint2D_Ycoord, DelayList, s=4, c=IntensityList, label=labelLine)
+        # plt.title('Delay + Intensity graph\n press left/right to move detector position')
+        fig.suptitle("Delay + Intensity graph\n press left/right to move detector position")
+
+    elif ColorCoded == "Incidence":
+        ax.scatter(DectectorPoint2D_Xcoord, DectectorPoint2D_Ycoord, DelayList, s=4, c=IncidenceList, label=labelLine)
+        # plt.title('Delay + Incidence graph\n press left/right to move detector position')
+        fig.suptitle("Delay + Incidence graph\n press left/right to move detector position")
+    else:
+        ax.scatter(DectectorPoint2D_Xcoord, DectectorPoint2D_Ycoord, DelayList, s=4, c=DelayList, label=labelLine)
+        # plt.title('Delay graph\n press left/right to move detector position')
+        fig.suptitle("Delay graph\n press left/right to move detector position")
+
+    ax.legend(loc="upper right")
+
+    if DrawAiryAndFourier:
+        x = np.linspace(-AiryRadius, AiryRadius, 40)
+        z = np.linspace(np.mean(DelayList) - DeltaFT * 0.5, np.mean(DelayList) + DeltaFT * 0.5, 40)
+        x, z = np.meshgrid(x, z)
+        y = np.sqrt(AiryRadius**2 - x**2)
+        ax.plot_wireframe(x, y, z, color="grey", alpha=0.1)
+        ax.plot_wireframe(x, -y, z, color="grey", alpha=0.1)
+
+    axisLim = 1.1 * max(AiryRadius, 0.5 * FocalSpotSize * 1000)
+    ax.set_xlim(-axisLim, axisLim)
+    ax.set_ylim(-axisLim, axisLim)
+    #ax.set_zlim(-axisLim/3*10, axisLim/3*10) #same scaling as spatial axes 
+    ax.set_zlim(-DeltaFT, DeltaFT)
+    
+    plt.show()
+    fig.canvas.draw()
+
+    return fig, NumericalAperture, AiryRadius, FocalSpotSize
+
+moc.OpticalChain.drawDelaySpots = DrawDelaySpots
+
 # %% Mirror projection
-def MirrorProjection(OpticalChain, ReflectionNumber: int, ColorCoded=None, DetectorName="") -> plt.Figure:
+def DrawMirrorProjection(OpticalChain, ReflectionNumber: int, ColorCoded=None, Detector="") -> plt.Figure:
     """
     Produce a plot of the ray impact points on the optical element with index 'ReflectionNumber'.
     The points can be color-coded according ["Incidence","Intensity","Delay"], where the ray delay is
@@ -426,6 +460,11 @@ def MirrorProjection(OpticalChain, ReflectionNumber: int, ColorCoded=None, Detec
             Shows the figure.
     """
     from mpl_toolkits.axes_grid1 import make_axes_locatable
+    if isinstance(Detector, str):
+        if Detector == "":
+            Detector = None
+        else:
+            Detector = OpticalChain.detectors[Detector]
 
     Position = OpticalChain[ReflectionNumber].position
     q = OpticalChain[ReflectionNumber].orientation
@@ -451,7 +490,7 @@ def MirrorProjection(OpticalChain, ReflectionNumber: int, ColorCoded=None, Detec
         zlabel = "Incidence angle (deg)"
         title = "Ray incidence projected on mirror              "
     elif ColorCoded == "Delay":
-        if OpticalChain.Detector is not None:
+        if Detector is not None:
             z = np.asarray(Detector.get_Delays(RayListAnalysed))
             zlabel = "Delay (fs)"
             title = "Ray delay at detector projected on mirror              "
@@ -483,70 +522,10 @@ def MirrorProjection(OpticalChain, ReflectionNumber: int, ColorCoded=None, Detec
     return fig
 
 
+moc.OpticalChain.drawMirrorProjection = DrawMirrorProjection
+
 # %% Setup rendering
-def _RenderRays(RayListHistory, EndDistance, maxRays=150):
-    """
-    Generates a list of Pyvista-meshes representing the rays in RayListHistory.
-    This can then be employed to render the rays in a Pyvista-figure.
-
-    Parameters
-    ----------
-        RayListHistory : list(list(Ray))
-            A list of lists of objects of the ModuleOpticalRay.Ray-class.
-
-        EndDistance : float
-            The rays of the last ray bundle are drawn with a length given by EndDistance (in mm).
-
-        maxRays : int, optional
-            The maximum number of rays to render. Rendering all the traced rays is a insufferable resource hog
-            and not required for a nice image. Default is 150.
-    
-    Returns
-    -------
-        meshes : list(pvPolyData)
-            List of Pyvista PolyData objects representing the rays
-    """
-    meshes = []
-    # Ray display
-    for k in range(len(RayListHistory)):
-        x = []
-        y = []
-        z = []
-        if k != len(RayListHistory) - 1:
-            knums = list(
-                map(lambda x: x.number, RayListHistory[k])
-            )  # make a list of all ray numbers that are still in the game
-            if len(RayListHistory[k + 1]) > maxRays:
-                rays_to_render = np.random.choice(RayListHistory[k + 1], maxRays, replace=False)
-            else:
-                rays_to_render = RayListHistory[k + 1]
-
-            for j in rays_to_render:
-                indx = knums.index(j.number)
-                i = RayListHistory[k][indx]
-                Point1 = i.point
-                Point2 = j.point
-                x += [Point1[0], Point2[0]]
-                y += [Point1[1], Point2[1]]
-                z += [Point1[2], Point2[2]]
-
-        else:
-            if len(RayListHistory[k]) > maxRays:
-                rays_to_render = np.random.choice(RayListHistory[k], maxRays, replace=False)
-            else:
-                rays_to_render = RayListHistory[k]
-
-            for j in rays_to_render:
-                Point = j.point
-                Vector = j.vector
-                x += [Point[0], Point[0] + Vector[0] * EndDistance]
-                y += [Point[1], Point[1] + Vector[1] * EndDistance]
-                z += [Point[2], Point[2] + Vector[2] * EndDistance]
-        points = np.column_stack((x, y, z))
-        meshes += [pv.line_segments_from_points(points)]
-    return meshes
-
-def RayRenderGraph(OpticalChain, 
+def DrawSetup(OpticalChain, 
                    EndDistance=None, 
                    maxRays=300, 
                    OEpoints=2000, 
@@ -606,7 +585,7 @@ def RayRenderGraph(OpticalChain,
         new_rgb = hls_to_rgb(h, l, s)
         darkened_color = pv.Color(new_rgb)
         mpm._RenderOpticalElement(fig, OE, OEpoints, draw_mesh, darkened_color, index=i)
-    ray_meshes = _RenderRays(RayListHistory, EndDistance, maxRays)
+    ray_meshes = mpm._RenderRays(RayListHistory, EndDistance, maxRays)
     for i,ray in enumerate(ray_meshes):
         color = pv.Color(colors[i])
         fig.add_mesh(ray, color=color, name=f"RayBundle_{i}")
@@ -617,7 +596,7 @@ def RayRenderGraph(OpticalChain,
             color = pv.Color(colors[i-1])
             fig.add_mesh(points, color=color, point_size=5, name=f"RayImpactPoints_{i}")
     
-    detector_copies = {key: copy(OpticalChain.detectors[key][0]) for key in OpticalChain.detectors.keys()}
+    detector_copies = {key: copy(OpticalChain.detectors[key]) for key in OpticalChain.detectors.keys()}
     detector_meshes_list = []
     detectedpoint_meshes = dict()
     
@@ -625,7 +604,7 @@ def RayRenderGraph(OpticalChain,
         # Detector display
         for key in OpticalChain.detectors.keys():
             det = detector_copies[key]
-            index = OpticalChain.detectors[key][1]
+            index = OpticalChain.detectors[key].index
             if key in Observers:
                 det.distance = Observers[key].value
                 #Observers[key].register_calculation(lambda x: det.set_distance(x))
@@ -664,11 +643,11 @@ def RayRenderGraph(OpticalChain,
     fig.show()
     return fig
 
-moc.OpticalChain.render = RayRenderGraph
+moc.OpticalChain.render = DrawSetup
 
 # %% Asphericity
 
-def plot_asphericity(Mirror, Npoints=1000):
+def DrawAsphericity(Mirror, Npoints=1000):
     """
     This function displays a map of the asphericity of the mirror.
     It's a scatter plot of the points of the mirror surface, with the color representing the distance to the closest sphere.
@@ -690,7 +669,7 @@ def plot_asphericity(Mirror, Npoints=1000):
     plt.ion()
     fig = plt.figure()
     ax = Mirror.support._ContourSupport(fig)
-    center, radius = man.get_closest_sphere(Mirror, Npoints)
+    center, radius = man.GetClosestSphere(Mirror, Npoints)
     Points = mpm.sample_support(Mirror.support, Npoints=1000)
     Points += Mirror.r0[:2]
     Z = Mirror._zfunc(Points)
@@ -715,10 +694,10 @@ def plot_asphericity(Mirror, Npoints=1000):
     plt.show()
     return fig
 
-
+mmirror.Mirror.drawAsphericity = DrawAsphericity
 # %% Caustics
 
-def plot_caustics(OpticalChain, Range, DetectorName="Focus" , Npoints=1000, Nrays=1000):
+def DrawCaustics(OpticalChain, Range=1, Detector="Focus" , Npoints=1000, Nrays=1000):
     """
     This function displays the caustics of the rays on the detector.
     To do so, it calculates the intersections of the rays with the detector over a 
@@ -745,8 +724,11 @@ def plot_caustics(OpticalChain, Range, DetectorName="Focus" , Npoints=1000, Nray
         The figure of the plot.
     """
     distances = np.linspace(-Range, Range, Npoints)
-    Det,Index = OpticalChain.detectors[DetectorName]
+    if isinstance(Detector, str):
+        Det = OpticalChain.detectors[Detector]
+        Index = Det.index
     Rays = OpticalChain.get_output_rays()[Index]
+    Nrays = min(Nrays, len(Rays))
     Rays = np.random.choice(Rays, Nrays, replace=False)
     LocalRayList = [r.to_basis(*Det.basis) for r in Rays]
     Points = mgeo.IntersectionRayListZPlane(LocalRayList, distances)
@@ -765,3 +747,5 @@ def plot_caustics(OpticalChain, Range, DetectorName="Focus" , Npoints=1000, Nray
     plt.title("Caustics")
     plt.show()
     return fig
+
+moc.OpticalChain.drawCaustics = DrawCaustics

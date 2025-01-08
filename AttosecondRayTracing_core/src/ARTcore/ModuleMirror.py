@@ -102,7 +102,15 @@ class Mirror(moe.OpticalElement):
                 self.Surface.reflect_ray(local_rays[i], intersection_points[i], self.get_local_normal(intersection_points[i])) 
                 for i in range(len(local_rays)) if OK[i]]
         reflected_rays = mray.RayList.from_list(local_reflected_rays).from_basis(*self.basis)
-        if len(reflected_rays) == 0:
+        if alignment and len(reflected_rays) == 0:
+            logger.error("Unexpected error occurred: no rays were reflected during alignment procedure.")
+            logger.error("This should not happen.")
+            logger.error(f"Mirror on which error ocurred: {self}")
+            logger.error(f"Alignment ray: {RayList[0]}")
+            logger.error(f"Alignment ray in mirror reference frame: {local_rays[0]}")
+            logger.error(f"Intersection point: {self._get_intersection(local_rays[0])[0]}")
+            logger.error(f"Support: {self.support}")
+        elif len(reflected_rays) == 0:
             logger.warning("No rays were reflected by the mirror.")
             logger.debug(f"Mirror: {self}")
             logger.debug(f"First ray: {RayList[0]}")
@@ -561,9 +569,11 @@ class MirrorToroidal(Mirror):
         Solution = mgeo.SolverQuartic(a, b, c, d, e)
         if len(Solution) == 0:
             return None, False
-        Solution = min(t for t in Solution if t > 0)
-        IntersectionPoint = Ray.point + Ray.vector * Solution
-        OK = IntersectionPoint-self.r0 in self.support and IntersectionPoint[2] < -self.majorradius
+        Solution = [t for t in Solution if t > 0]
+        IntersectionPoint = [Ray.point + Ray.vector *i for i in Solution]
+        distances = [mgeo.Vector(i - self.r0).norm for i in IntersectionPoint]
+        IntersectionPoint = IntersectionPoint[distances.index(min(distances))]
+        OK = IntersectionPoint - self.r0 in self.support and np.abs(IntersectionPoint[2]-self.r0[2]) < self.majorradius
         return IntersectionPoint, OK
 
     def get_local_normal(self, Point):
@@ -721,14 +731,15 @@ class MirrorEllipsoidal(Mirror):
         self._f_object = values["f1"]
         self._f_image = values["f2"]
 
+        self.centre_ref = self._get_centre_ref()
+
         self.r0 = self.centre_ref
 
-        self.centre_ref = self._get_centre_ref()
         self.support_normal_ref = Vector([0, 0, 1.0])
         self.majoraxis_ref = Vector([1.0, 0, 0])
 
-        self.f1_ref = Point([0.0, 0, -self.a])
-        self.f2_ref = Point([0.0, 0, self.a])
+        self.f1_ref = Point([-self.a, 0,0])
+        self.f2_ref = Point([ self.a, 0,0])
         self.towards_image_ref = (self.f2_ref - self.centre_ref).normalized()
         self.towards_object_ref = (self.f1_ref - self.centre_ref).normalized()
         self.centre_normal_ref = self.get_local_normal(self.centre_ref)
@@ -791,7 +802,11 @@ class MirrorEllipsoidal(Mirror):
     def _zfunc(self, PointArray):
         x = PointArray[:,0]
         y = PointArray[:,1]
-        return np.sqrt(1 - (x / self.a)**2 - (y / self.b)**2)
+        x-= self.r0[0]
+        y-= self.r0[1]
+        z =  -np.sqrt(1 - (x / self.a)**2 - (y / self.b)**2)
+        z += self.r0[2]
+        return z
     
 
 # %% Cylindrical mirror definitions

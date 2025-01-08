@@ -103,6 +103,7 @@ def sample_support(Support, Npoints):
     return mgeo.PointArray(Points)
 
 def sample_z_values(Support, Npoints):
+    Npoints_init = Npoints
     if hasattr(Support, "size"):
         size = Support.size
     else:
@@ -115,7 +116,7 @@ def sample_z_values(Support, Npoints):
         X, Y = np.meshgrid(X, Y)
         Points = np.array([X.flatten(), Y.flatten()]).T
         Points = [p for p in Points if p in Support]
-        if len(Points) > Npoints * 0.5:
+        if len(Points) > Npoints_init * 0.5:
             enough = True
         else:
             Npoints *= 2
@@ -157,6 +158,7 @@ def _RenderMirrorSurface(Mirror, Npoints=10000):
     X += Mirror.r0[0]
     Y += Mirror.r0[1]
     Z = Mirror._zfunc(mgeo.PointArray([X.flatten(), Y.flatten()]).T).reshape(X.shape)
+    #Z += Mirror.r0[2]
     Z[~mask] = np.nan
     Points = mgeo.PointArray([X.flatten(), Y.flatten(), Z.flatten()]).T
     Points = Points.from_basis(*Mirror.basis)
@@ -205,3 +207,158 @@ def _RenderDetector(fig, Detector, size = 40, name = "Focus", detector_meshes = 
     if detector_meshes is not None:
         detector_meshes += [Rect]
     fig.add_mesh(Rect, color="green", name=f"Detector {name}")
+
+# %% Support rendering using the sdf method
+
+def _RenderSupport(Support, Npoints=10000):
+    """
+    This function renders a support in 3D.
+    """
+    X,Y,mask = sample_z_values(Support, Npoints)
+    shape = X.shape
+    Z = np.zeros_like(X)
+    Z[~mask] = np.nan
+    mesh = pv.StructuredGrid(X, Y, Z)
+    return mesh
+    
+msup.SupportRound._Render = _RenderSupport
+msup.SupportRoundHole._Render = _RenderSupport
+msup.SupportRectangle._Render = _RenderSupport
+msup.SupportRectangleHole._Render = _RenderSupport
+msup.SupportRectangleRectHole._Render = _RenderSupport
+
+
+# %% Standalone optical element rendering
+
+def _RenderMirror(Mirror, Npoints=1000, draw_support = False, draw_points = False, draw_vectors = True , recenter_support = True):
+    """
+    This function renders a mirror in 3D.
+    """
+    mesh = Mirror._Render(Npoints)
+    p = pv.Plotter()
+    p.add_mesh(mesh)
+    if draw_support:
+        support = Mirror.support._Render()
+        if recenter_support:
+            support.translate(Mirror.r0,inplace=True)
+        p.add_mesh(support, color="gray", opacity=0.5)
+    
+    if draw_vectors:
+        # We draw the important vectors of the optical element
+        # For that, if we have a "vectors" attribute, we use that
+        #  (a dictionary with the vector names as keys and the colors as values)
+        # Otherwise we use the default vectors: "support_normal", "majoraxis"
+        if hasattr(Mirror, "vectors"):
+            vectors = Mirror.vectors
+        else:
+            vectors = {"support_normal_ref": "red", "majoraxis_ref": "blue"}
+        for vector, color in vectors.items():
+            if hasattr(Mirror, vector):
+                p.add_arrows(Mirror.r0, 10*getattr(Mirror, vector), color=color)
+    
+    if draw_points:
+        # We draw the important points of the optical element
+        # For that, if we have a "points" attribute, we use that
+        #  (a dictionary with the point names as keys and the colors as values)
+        # Otherwise we use the default points: "centre_ref"
+        if hasattr(Mirror, "points"):
+            points = Mirror.points
+        else:
+            points = {"centre_ref": "red"}
+        for point, color in points.items():
+            if hasattr(Mirror, point):
+                p.add_mesh(pv.Sphere(radius=1, center=getattr(Mirror, point)), color=color)
+    else:
+        p.add_mesh(pv.Sphere(radius=1, center=Mirror.r0), color="red")
+    p.show()
+    return p
+
+mmir.MirrorPlane.render = _RenderMirror
+mmir.MirrorParabolic.render = _RenderMirror
+mmir.MirrorParabolic.vectors = {
+    "support_normal": "red",
+    "majoraxis": "blue",
+    "towards_focusing_ref": "green"
+}
+mmir.MirrorParabolic.points = {
+    "centre_ref": "red",
+    "focus_ref": "green"
+}
+mmir.MirrorCylindrical.render = _RenderMirror
+mmir.MirrorEllipsoidal.render = _RenderMirror
+mmir.MirrorEllipsoidal.vectors = {
+    "support_normal_ref": "red",
+    "majoraxis_ref": "blue",
+    "towards_image_ref": "green",
+    "towards_object_ref": "green",
+    "centre_normal_ref": "purple"}
+
+mmir.MirrorSpherical.render = _RenderMirror
+mmir.MirrorToroidal.render = _RenderMirror
+
+mmask.Mask.render = _RenderMirror
+
+# %% Ray rendering
+
+def _RenderRays(RayListHistory, EndDistance, maxRays=150):
+    """
+    Generates a list of Pyvista-meshes representing the rays in RayListHistory.
+    This can then be employed to render the rays in a Pyvista-figure.
+
+    Parameters
+    ----------
+        RayListHistory : list(list(Ray))
+            A list of lists of objects of the ModuleOpticalRay.Ray-class.
+
+        EndDistance : float
+            The rays of the last ray bundle are drawn with a length given by EndDistance (in mm).
+
+        maxRays : int, optional
+            The maximum number of rays to render. Rendering all the traced rays is a insufferable resource hog
+            and not required for a nice image. Default is 150.
+    
+    Returns
+    -------
+        meshes : list(pvPolyData)
+            List of Pyvista PolyData objects representing the rays
+    """
+    meshes = []
+    # Ray display
+    for k in range(len(RayListHistory)):
+        x = []
+        y = []
+        z = []
+        if k != len(RayListHistory) - 1:
+            knums = list(
+                map(lambda x: x.number, RayListHistory[k])
+            )  # make a list of all ray numbers that are still in the game
+            if len(RayListHistory[k + 1]) > maxRays:
+                rays_to_render = np.random.choice(RayListHistory[k + 1], maxRays, replace=False)
+            else:
+                rays_to_render = RayListHistory[k + 1]
+
+            for j in rays_to_render:
+                indx = knums.index(j.number)
+                i = RayListHistory[k][indx]
+                Point1 = i.point
+                Point2 = j.point
+                x += [Point1[0], Point2[0]]
+                y += [Point1[1], Point2[1]]
+                z += [Point1[2], Point2[2]]
+
+        else:
+            if len(RayListHistory[k]) > maxRays:
+                rays_to_render = np.random.choice(RayListHistory[k], maxRays, replace=False)
+            else:
+                rays_to_render = RayListHistory[k]
+
+            for j in rays_to_render:
+                Point = j.point
+                Vector = j.vector
+                x += [Point[0], Point[0] + Vector[0] * EndDistance]
+                y += [Point[1], Point[1] + Vector[1] * EndDistance]
+                z += [Point[2], Point[2] + Vector[2] * EndDistance]
+        points = np.column_stack((x, y, z))
+        meshes += [pv.line_segments_from_points(points)]
+    return meshes
+

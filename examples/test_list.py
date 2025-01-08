@@ -39,7 +39,7 @@ ChainDescription = "2 toroidal mirrors in f-d-f config, i.e. approx. collimation
 
 
 # %% Define the optical elements
-SupportMask = msupp.SupportRoundHole(Radius=20, RadiusHole=14/2, CenterHoleX=0, CenterHoleY=0) 
+SupportMask = msupp.SupportRoundHole(Radius=30, RadiusHole=14/2, CenterHoleX=0, CenterHoleY=0) 
 Mask = mmask.Mask(SupportMask)
 MaskSettings = {
     'OpticalElement' : Mask,
@@ -51,7 +51,7 @@ MaskSettings = {
 }
 
 Focal = 500
-AngleIncidence = 80 #in deg
+AngleIncidence = 75 #in deg
 OptimalMajorRadius, OptimalMinorRadius = mmirror.ReturnOptimalToroidalRadii(Focal, AngleIncidence)
 SupportToroidal = msupp.SupportRectangle(150, 32)
 
@@ -59,7 +59,7 @@ ToroidalMirrorA = mmirror.MirrorToroidal(SupportToroidal, OptimalMajorRadius, Op
 ToroidalASettings = {
     'OpticalElement' : ToroidalMirrorA,
     'Distance' : Focal-MaskSettings['Distance'],
-    'IncidenceAngle' : 0,
+    'IncidenceAngle' : AngleIncidence,
     'IncidencePlaneAngle' : 0,
     'Description' : "First parabola for collimation",
 }
@@ -68,45 +68,55 @@ ToroidalMirrorB = mmirror.MirrorToroidal(SupportToroidal,OptimalMajorRadius, Opt
 ToroidalBSettings = {
     'OpticalElement' : ToroidalMirrorB,
     'Distance' : None,
-    'IncidenceAngle' : 0,
-    'IncidencePlaneAngle' : 0,
+    'IncidenceAngle' : AngleIncidence,
+    'IncidencePlaneAngle' : 180,
     'Description' : "First parabola for collimation",
 }
 
-Det = mdet.InfiniteDetector()
+Det = mdet.InfiniteDetector(-1)
 Detectors = {
-    "Focus": (Det, -1) # -1 means that the detector is placed at the last optical element
+    "Focus": Det
 }
 
 
-Distances = np.linspace(Focal-200, Focal+200, 100)
+Distances = np.linspace(Focal-200, Focal+200, 20)
+FocalDistances = []
 FocalSizes = []
 
 for d in Distances:
-    toroidalBSettings = copy(ToroidalBSettings)
-    toroidalBSettings['OpticalElement'] = copy(ToroidalMirrorB)
-    toroidalBSettings['Distance'] = d
-    toroidalASettings = copy(ToroidalBSettings)
-    toroidalASettings['OpticalElement'] = copy(ToroidalMirrorB)
-    maskSettings = copy(MaskSettings)
-    maskSettings['OpticalElement'] = copy(Mask)
-    OpticsList = [maskSettings,toroidalASettings, toroidalBSettings]
-    AlignedOpticalElements = mp.OEPlacement(OpticsList)
-    print(ToroidalBSettings["OpticalElement"].basis)
+    ToroidalBSettings['Distance'] = d
+    print(d)
+    AlignedOpticalElements = mp.OEPlacement([MaskSettings, ToroidalASettings, ToroidalBSettings])
     AlignedOpticalChain = moc.OpticalChain(Source(1000), AlignedOpticalElements, Detectors, ChainDescription)
-    rays= AlignedOpticalChain.get_output_rays()
-    Det.autoplace(rays[-1], 390)
-    Det.optimise_distance(AlignedOpticalChain.get_output_rays()[-1], [200,600], Det._spot_size, maxiter=10, tol=1e-14)
-    FocalSizes.append(Det.distance)
+    RayListAnalysed = AlignedOpticalChain.get_output_rays()[-1]
+    Det.autoplace(RayListAnalysed, 390)
+    Det.optimise_distance(RayListAnalysed, [200,600], Det._spot_size, maxiter=10, tol=1e-14)
+    FocalDistances.append(Det.distance)
+    DetectorPointList2D = AlignedOpticalChain.get2dPoints()
+    DetectorPointList2DCentre = DetectorPointList2D - np.mean(DetectorPointList2D, axis=0)
+    FocalSpotSizeSD = np.std(DetectorPointList2DCentre.norm)
+    FocalSizes.append(FocalSpotSizeSD)
 
+optimalDistance = Distances[np.argmin(FocalSizes)]
 
-# AlignedOpticalChain.rotate_OE(1, "localnormal", "roll", 180)
-# AlignedOpticalChain.partial_realign(2,3, DistanceList[2:3], IncidenceAngleList[2:3], IncidencePlaneAngleList[2:3])
+fig, ax = plt.subplots()
+ax.plot(Distances, FocalSizes)
+ax.set_xlabel('Distance between PM and Toroidal B [mm]')
+ax.set_ylabel('Spot size [mm]')
+ax.scatter(optimalDistance, np.min(FocalSizes), color='red')
+plt.tight_layout()
 
-#Detector = setup_detector(AlignedOpticalChain, DetectorOptions, AlignedOpticalChain.get_output_rays()[-1])
-#maap.SpotDiagram(AlignedOpticalChain.get_output_rays()[-1], Detector)
-#maap.SpotDiagram(AlignedOpticalChain, ColorCoded="Incidence", DrawAiryAndFourier=True)
-#maap.RayRenderGraph(AlignedOpticalChain, EndDistance=500, OEpoints=5000, cycle_ray_colors=True, impact_points=True, DetectedRays=True)
-#X,Y,Z = man.get_planewavefocus(AlignedOpticalChain, DetectorName="Focus", size=None, Nrays=1000, resolution=100)
-#plt.pcolormesh(X*1e3,Y*1e3,Z)
-#plt.show()
+ToroidalBSettings['Distance'] = optimalDistance
+AlignedOpticalElements = mp.OEPlacement([MaskSettings, ToroidalASettings, ToroidalBSettings])
+AlignedOpticalChain = moc.OpticalChain(Source(5000), AlignedOpticalElements, Detectors, ChainDescription)
+rays= AlignedOpticalChain.get_output_rays()
+Det.autoplace(rays[-1], FocalDistances[np.argmin(FocalSizes)])
+Det.optimise_distance(rays[-1], [200,600], Det._spot_size, maxiter=10, tol=1e-14)
+
+AlignedOpticalChain.render(EndDistance=Det.distance+10, OEpoints=5000, cycle_ray_colors=True, impact_points=True, DetectedRays=True)
+AlignedOpticalChain.drawSpotDiagram(ColorCoded="Delay")
+AlignedOpticalChain.drawCaustics()
+
+print("Optimum found for following parameters:")
+print(AlignedOpticalChain)
+plt.show()

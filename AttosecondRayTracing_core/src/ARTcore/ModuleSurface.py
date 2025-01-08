@@ -35,6 +35,7 @@ class IdealSurface(Surface):
         local_reflectedray.point = point
         local_reflectedray.vector = VectorRayReflected
         local_reflectedray.incidence = mgeo.AngleBetweenTwoVectors(-VectorRay, normal)
-        local_reflectedray.path = ray.path + (np.linalg.norm(point - ray.point),)
+        new_length = np.linalg.norm(point - ray.point)
+        local_reflectedray.path  = ray.path + (new_length,)
         return local_reflectedray
     

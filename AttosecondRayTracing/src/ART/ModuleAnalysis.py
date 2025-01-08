@@ -1,6 +1,29 @@
 """
 Adds various analysis methods.
 
+Contains the following functions:
+    - GetETransmission: Calculates the energy transmission from RayListIn to RayListOut in percent.
+    - GetResultSummary: Calculate and return FocalSpotSize-standard-deviation and Duration-standard-deviation.
+    - GetPulseProfile: Retrieve the pulse profile from the given RayList and Detector.
+    - GetNumericalAperture: Returns the numerical aperture associated with the supplied ray-bundle.
+    - GetAiryRadius: Returns the radius of the Airy disk.
+    - GetPlaneWaveFocus: Calculates the approximate polychromatic focal spot of a set of rays.
+    - GetDiffractionFocus: Calculates the approximate polychromatic focal spot of a set of rays.
+    - GetClosestSphere: Calculates the closest sphere to the surface of a mirror.
+    - GetAsphericity: Calculates the maximum distance of the mirror surface to the closest sphere.
+    - _best_fit_sphere: Calculates the best sphere to fit a set of points.
+
+Adds the following methods:
+    - OpticalChain:
+        - getETransmission: Calculates the energy transmission from the input to the output of the OpticalChain.
+        - getResultsSummary: Calculate and return FocalSpotSize-standard-deviation and Duration-standard-deviation.
+        - getPulseProfile: Retrieve the pulse profile from the output of the OpticalChain.
+        - getPlaneWaveFocus: Calculates the approximate polychromatic focal spot of the output of the OpticalChain.
+        - getDiffractionFocus: Calculates the approximate polychromatic focal spot of the output of the OpticalChain.
+    - Mirror:
+        - getClosestSphere: Calculates the closest sphere to the surface of a mirror.
+        - getAsphericity: Calculates the maximum distance of the mirror surface to the closest sphere.
+
 Created in July 2024
 
 @author: André Kalouguine + Stefan Haessler + Anthony Guillaume
@@ -9,6 +32,8 @@ Created in July 2024
 import ARTcore.ModuleGeometry as mgeo
 import ARTcore.ModuleOpticalRay as mray
 import ARTcore.ModuleProcessing as mp
+import ARTcore.ModuleOpticalChain as moc
+import ARTcore.ModuleMirror as mmirror
 import ART.ModulePlottingMethods as mpm
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -18,7 +43,7 @@ import math
 LightSpeed = 299792458000
 
 # %% Analysis methods
-def getETransmission(RayListIn, RayListOut) -> float:
+def GetETransmission(RayListIn, RayListOut) -> float:
     """
     Calculates the energy transmission from RayListIn to RayListOut in percent by summing up the
     intensity-property of the individual rays.
@@ -38,6 +63,35 @@ def getETransmission(RayListIn, RayListOut) -> float:
     ETransmission = 100 * sum(Ray.intensity for Ray in RayListOut) / sum(Ray.intensity for Ray in RayListIn)
     return ETransmission
 
+def _getETransmission(OpticalChain, IndexIn=0, IndexOut=-1) -> float:
+    """
+    Calculates the energy transmission from the input to the output of the OpticalChain in percent.
+
+    Parameters
+    ----------
+        OpticalChain : OpticalChain
+            An object of the ModuleOpticalChain.OpticalChain-class.
+
+        IndexIn : int, optional
+            Index of the input RayList in the OpticalChain, defaults to 0.
+
+        IndexOut : int, optional
+            Index of the output RayList in the OpticalChain, defaults to -1.
+
+    Returns
+    -------
+        ETransmission : float
+    """
+    Rays = OpticalChain.get_output_rays()
+    if IndexIn == 0:
+        RayListIn = OpticalChain.get_input_rays()
+    else:
+        RayListIn = Rays[IndexIn]
+    RayListOut = Rays[IndexOut]
+    ETransmission = GetETransmission(RayListIn, RayListOut)
+    return ETransmission
+
+moc.OpticalChain.getETransmission = _getETransmission
 
 def GetResultSummary(Detector, RayListAnalysed, verbose=False):
     """
@@ -62,7 +116,7 @@ def GetResultSummary(Detector, RayListAnalysed, verbose=False):
 
         DurationSD : float
     """
-    DetectorPointList2DCentre = Detector.get_PointList2DCentre(RayListAnalysed)
+    DetectorPointList2DCentre = Detector.get_2D_points(RayListAnalysed)
     FocalSpotSizeSD = mp.StandardDeviation(DetectorPointList2DCentre)
     DelayList = Detector.get_Delays(RayListAnalysed)
     DurationSD = mp.StandardDeviation(DelayList)
@@ -89,8 +143,103 @@ def GetResultSummary(Detector, RayListAnalysed, verbose=False):
 
     return FocalSpotSizeSD, DurationSD
 
+def _getResultsSummary(OpticalChain, Detector = "Focus", verbose=False):
+    """
+    Calculate and return FocalSpotSize-standard-deviation and Duration-standard-deviation
+    for the given Detector and RayList.
+    If verbose, then also print a summary of the results for the given Detector.
 
-def ReturnNumericalAperture(RayList: list[mray.Ray], RefractiveIndex: float = 1) -> float:
+    Parameters
+    ----------
+        OpticalChain : OpticalChain
+            An object of the ModuleOpticalChain.OpticalChain-class.
+
+        Detector : Detector or str, optional
+            An object of the ModuleDetector.Detector-class or "Focus" to use the focus detector, defaults to "Focus".
+
+        verbose : bool
+            Whether to print a result summary.
+
+    Returns
+    -------
+        FocalSpotSizeSD : float
+
+        DurationSD : float
+    """
+    if isinstance(Detector, str):
+        Detector = OpticalChain.detectors[Detector]
+    Index = Detector.index
+    RayListAnalysed = OpticalChain.get_output_rays()[Index]
+    FocalSpotSizeSD, DurationSD = GetResultSummary(Detector, RayListAnalysed, verbose)
+    return FocalSpotSizeSD, DurationSD
+
+moc.OpticalChain.getResultsSummary = _getResultsSummary
+
+def GetPulseProfile(Detector, RayList, Nbins=100):
+    """
+    Retrieve the pulse profile from the given RayList and Detector.
+    The pulse profile is calculated by binning the delays of the rays in the RayList
+    at the Detector. The intensity of the rays is also taken into account.
+
+    Parameters
+    ----------
+        Detector : Detector
+            An object of the ModuleDetector.Detector-class.
+
+        RayList : list(Ray)
+            List of objects of the ModuleOpticalRay.Ray-class.
+
+        Nbins : int
+            Number of bins to use for the histogram.
+
+    Returns
+    -------
+        time : numpy.ndarray
+            The bins of the histogram.
+
+        intensity : numpy.ndarray
+            The histogram values.
+    """
+    DelayList = Detector.get_Delays(RayList)
+    IntensityList = [Ray.intensity for Ray in RayList]
+    intensity, time_edges = np.histogram(DelayList, bins=Nbins, weights=IntensityList)
+    time = 0.5 * (time_edges[1:] + time_edges[:-1])
+    return time, intensity
+
+def _getPulseProfile(OpticalChain, Detector = "Focus", Nbins=100):
+    """
+    Retrieve the pulse profile from the output of the OpticalChain.
+    The pulse profile is calculated by binning the delays of the rays in the RayList
+    at the Detector. The intensity of the rays is also taken into account.
+
+    Parameters
+    ----------
+        OpticalChain : OpticalChain
+            An object of the ModuleOpticalChain.OpticalChain-class.
+
+        Detector : Detector or str, optional
+            An object of the ModuleDetector.Detector-class or "Focus" to use the focus detector, defaults to "Focus".
+
+        Nbins : int
+            Number of bins to use for the histogram.
+
+    Returns
+    -------
+        time : numpy.ndarray
+            The bins of the histogram.
+
+        intensity : numpy.ndarray
+            The histogram values.
+    """
+    if isinstance(Detector, str):
+        Detector = OpticalChain.detectors[Detector]
+    Index = Detector.index
+    RayList = OpticalChain.get_output_rays()[Index]
+    time, intensity = GetPulseProfile(Detector, RayList, Nbins)
+    return time, intensity
+
+
+def GetNumericalAperture(RayList: list[mray.Ray], RefractiveIndex: float = 1) -> float:
     r"""
     Returns the numerical aperture associated with the supplied ray-bundle 'Raylist'.
     This is $n\sin\theta$, where $\theta$ is the maximum angle between any of the rays and the central ray,
@@ -123,7 +272,7 @@ def ReturnNumericalAperture(RayList: list[mray.Ray], RefractiveIndex: float = 1)
     return np.sin(np.amax(ListAngleAperture)) * RefractiveIndex
 
 
-def ReturnAiryRadius(Wavelength: float, NumericalAperture: float) -> float:
+def GetAiryRadius(Wavelength: float, NumericalAperture: float) -> float:
     r"""
     Returns the radius of the Airy disk: $r = 1.22 \frac\{\lambda\}\{NA\}$,
     i.e. the diffraction-limited radius of the focal spot corresponding to a given
@@ -149,7 +298,7 @@ def ReturnAiryRadius(Wavelength: float, NumericalAperture: float) -> float:
         return 0  # for very small numerical apertures, diffraction effects becomes negligible and the Airy Radius becomes meaningless
 
 
-def get_planewavefocus(OpticalChain, Detector, Index, size=None, Nrays=1000, resolution=100):
+def GetPlaneWaveFocus(OpticalChain, Detector = "Focus", size=None, Nrays=1000, resolution=100):
     """
     This function calculates the approximate polychromatic focal spot of a set of rays.
     To do so, it positions itself in the detector plane and samples a square area.
@@ -167,12 +316,15 @@ def get_planewavefocus(OpticalChain, Detector, Index, size=None, Nrays=1000, res
     As long as there are not too many rays, this method is faster than doing an FFT.
     It's also naturally polychromatic.
     """
+    if isinstance(Detector, str):
+        Detector = OpticalChain.detectors[Detector]
+    Index = Detector.index
     RayList = OpticalChain.get_output_rays()[Index]
     if size is None:
         Wavelengths = [Ray.wavelength for Ray in RayList]
         Wavelength = max(Wavelengths)
-        NumericalAperture = ReturnNumericalAperture(RayList)
-        size = 3 * ReturnAiryRadius(Wavelength, NumericalAperture)
+        NumericalAperture = GetNumericalAperture(RayList)
+        size = 3 * GetAiryRadius(Wavelength, NumericalAperture)
     X = np.linspace(-size / 2, size / 2, resolution)
     Y = np.linspace(-size / 2, size / 2, resolution)
     X, Y = np.meshgrid(X, Y)
@@ -205,8 +357,9 @@ def get_planewavefocus(OpticalChain, Detector, Index, size=None, Nrays=1000, res
 
     return X, Y, Intensity
 
+moc.getPlaneWaveFocus = GetPlaneWaveFocus
 
-def get_diffractionfocus(OpticalChain, Detector, Index, size=None, Nrays=1000, resolution=100):
+def GetDiffractionFocus(OpticalChain, Detector = "Focus", size=None, Nrays=1000, resolution=100):
     """
     This function calculates the approximate polychromatic focal spot of a set of rays.
     To do so, it positions itself in the detector plane and samples a square area.
@@ -220,12 +373,15 @@ def get_diffractionfocus(OpticalChain, Detector, Index, size=None, Nrays=1000, r
 
     So it returns the best case scenario for a diffraction limited focus with that numerical aperture
     """
+    if isinstance(Detector, str):
+        Detector = OpticalChain.detectors[Detector]
+    Index = Detector.index
     RayList = OpticalChain.get_output_rays()[Index]
     if size is None:
         Wavelengths = [Ray.wavelength for Ray in RayList]
         Wavelength = max(Wavelengths)
-        NumericalAperture = ReturnNumericalAperture(RayList)
-        size = 3 * ReturnAiryRadius(Wavelength, NumericalAperture)
+        NumericalAperture = GetNumericalAperture(RayList)
+        size = 3 * GetAiryRadius(Wavelength, NumericalAperture)
     X = np.linspace(-size / 2, size / 2, resolution)
     Y = np.linspace(-size / 2, size / 2, resolution)
     X, Y = np.meshgrid(X, Y)
@@ -251,6 +407,8 @@ def get_diffractionfocus(OpticalChain, Detector, Index, size=None, Nrays=1000, r
         Intensity += RayIntensities[i] * np.cos(k_vectors[i][0] * X + k_vectors[i][1] * Y)
 
     return X, Y, Intensity
+
+moc.getDiffractionFocus = GetDiffractionFocus
 
 # %% Asphericity analysis
 # This code is to do asphericity analysis of various surfaces
@@ -283,7 +441,7 @@ def BestFitSphere(X,Y,Z):
     return mgeo.Point(C[:3].flatten()),radius
 
 
-def get_closest_sphere(Mirror, Npoints=1000):
+def GetClosestSphere(Mirror, Npoints=1000):
     """
     This function calculates the closest sphere to the surface of a mirror.
     It does so by sampling the surface of the mirror at Npoints points.
@@ -298,11 +456,11 @@ def get_closest_sphere(Mirror, Npoints=1000):
     Center, Radius = BestFitSphere(spX, spY, spZ)
     return Center, Radius
 
-def get_asphericity(Mirror, Npoints=1000):
+def GetAsphericity(Mirror, Npoints=1000):
     """
     This function calculates the maximum distance of the mirror surface to the closest sphere. 
     """
-    center, radius = get_closest_sphere(Mirror, Npoints)
+    center, radius = GetClosestSphere(Mirror, Npoints)
     Points = mpm.sample_support(Mirror.support, Npoints=1000)
     Points += Mirror.r0[:2]
     Z = Mirror._zfunc(Points)
@@ -312,3 +470,5 @@ def get_asphericity(Mirror, Npoints=1000):
     Distance*=1e3 # To convert to µm
     return np.ptp(Distance)
 
+mmirror.Mirror.getClosestSphere = GetClosestSphere
+mmirror.Mirror.getAsphericity = GetAsphericity

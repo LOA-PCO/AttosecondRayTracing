@@ -100,15 +100,6 @@ class SupportRound(Support):
         MatrixXY = mgeo.SpiralVogel(NbPoint, self.radius)
         return mgeo.Point(np.hstack((MatrixXY, np.zeros((MatrixXY.shape[0], 1)))))
     
-    def _get_edges(self, NbPoint=100):
-        """
-        Return a list of 2D-numpy-arrays with the coordinates a number NbPoints of points.
-
-        The points are distributed along the contour of the support so as to clearly define the edges.
-        The putpose is to use these points to draw a nicer mesh of the mirrors.
-        """
-        return flatten_point_arrays(gen_circle_contour(self.radius, NbPoint), [])
-
 
 # %% Round Support with Hole
 class SupportRoundHole(Support):
@@ -170,24 +161,6 @@ class SupportRoundHole(Support):
         MatrixXY = mgeo.SpiralVogel(NbPoint, self.radius)
         return MatrixXY
         
-
-    def _ContourSupport(self, Figure):
-        """Draws support contour in MirrorProjection plots."""
-        raise ValueError("No visualisation")
-
-    def _Contour_points(self, NbPoint=100, edges=False):
-        """
-        Return a list of 2D-numpy-arrays with the coordinates a number NbPoints of points.
-
-        The points are distributed along the contour of the support so as to clearly define the edges.
-        The putpose is to use these points to draw a nicer mesh of the mirrors.
-        """
-        N_outer = int(round(NbPoint - NbPoint * self.radiushole / self.radius))
-        outer = gen_circle_contour(self.radius, N_outer)
-        hole = gen_circle_contour(self.radiushole, NbPoint - N_outer) + np.array([self.centerholeX, self.centerholeY])
-        return flatten_point_arrays(outer, [hole], edges=edges)
-
-
 # %% Rectangular Support
 class SupportRectangle(Support):
     """
@@ -241,20 +214,6 @@ class SupportRectangle(Support):
             for j in y:
                 ListCoordXY.append(np.array([i, j]))
         return ListCoordXY
-
-    def _ContourSupport(self, Figure):
-        """Draws support contour in MirrorProjection plots."""
-        raise ValueError("No visualisation")
-
-
-    def _Contour_points(self, NbPoint=100, edges=False):
-        """
-        Return a list of 2D-numpy-arrays with the coordinates a number NbPoints of points.
-
-        The points are distributed along the contour of the support so as to clearly define the edges.
-        The putpose is to use these points to draw a nicer mesh of the mirrors.
-        """
-        return flatten_point_arrays(gen_rectangle_contour(self.dimX, self.dimY, NbPoint), [], edges=edges)
 
 
 # %% Rectangular Support with Hole

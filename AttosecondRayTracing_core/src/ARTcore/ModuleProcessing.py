@@ -26,7 +26,7 @@ import pickle
 import lzma
 from time import perf_counter
 from datetime import datetime
-import copy
+from copy import copy
 import numpy as np
 import quaternion
 import logging
@@ -66,19 +66,9 @@ def singleOEPlacement(
     # Convert angles to radian and wrap to 2pi
     IncidencePlaneAngle = np.deg2rad(IncidencePlaneAngle) % (2 * np.pi)
     IncidenceAngle = np.deg2rad(IncidenceAngle) % (2 * np.pi)
-    if InputRay is None:
-        InputRay = mray.Ray(
-            point=mgeo.Point([0, 0, 0]), 
-            vector=mgeo.Vector([1, 0, 0]),
-            path=(0.0,),
-            number=0,
-            wavelength=800e-9,
-            incidence=0.0,
-            intensity=1.0
-    )
+    assert InputRay is not None, "InputRay must be provided"
     OldOpticalElementCentre = InputRay.point
     MasterRayDirection = InputRay.vector.normalized()
-
     OpticalElementCentre = OldOpticalElementCentre + MasterRayDirection * Distance
 
     logger.debug(f"Old Optical Element Centre: {OldOpticalElementCentre}")
@@ -117,7 +107,6 @@ def singleOEPlacement(
     Optic.r = Origin + (OpticalElementCentre - Optic.centre - Optic.r)
 
     NextRay = Optic.propagate_raylist(mray.RayList.from_list([InputRay]), alignment=True)[0]
-    
     return NextRay, IncidencePlane
 
 
@@ -129,7 +118,7 @@ def OEPlacement(
 ):
     """
     Automatic placement and alignment of the optical elements for one optical chain.
-    Returns the output ray and the incidence plane of the last optical element.
+    Returns a list of optical elements (copied)
     """
     if InitialRay is None:
         if Source is None:
@@ -152,9 +141,11 @@ def OEPlacement(
     logger.debug(f"Initial Incidence Plane: {InputIncidencePlane}")
     assert np.linalg.norm(np.dot(InputRay.vector, InputIncidencePlane))<1e-6, "InputIncidencePlane is not orthogonal to InputRay.vector"
     PreviousIncidencePlane = InputIncidencePlane.copy()
+    OEList = []
     for i in range(len(OpticsList)):
+        OEList.append(copy(OpticsList[i]["OpticalElement"]))
         InputRay, PreviousIncidencePlane = singleOEPlacement(
-            OpticsList[i]["OpticalElement"],
+            OEList[-1],
             OpticsList[i]["Distance"],
             OpticsList[i]["IncidenceAngle"],
             OpticsList[i]["IncidencePlaneAngle"],
@@ -162,7 +153,7 @@ def OEPlacement(
             OpticsList[i]["Alignment"] if "Alignment" in OpticsList[i] else "support_normal",
             PreviousIncidencePlane
         )
-    return [i["OpticalElement"] for i in OpticsList]
+    return OEList
     
 
 

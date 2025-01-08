@@ -40,6 +40,7 @@ class Detector(ABC):
     Non-abstract subclasses of `Detector` should implement the remaining
     functiuons such as the detection of rays
     """
+    type = "Generic Detector (Abstract)"
     @property
     def r(self):
         """
@@ -165,10 +166,12 @@ class InfiniteDetector(Detector):
         refpoint : np.ndarray
             3D reference point from which to measure the Detector distance.
     """
-    def __init__(self):
+    type = "Infinite Detector"
+    def __init__(self, index=-1):
         super().__init__()
         self._centre = mgeo.Origin
         self._refpoint = mgeo.Origin
+        self.index = index
     
     def __copy__(self):
         """
@@ -180,6 +183,7 @@ class InfiniteDetector(Detector):
         result._r = copy(self._r)
         result._q = copy(self._q)
         result.r0 = copy(self.r0)
+        result.index = self.index
         return result
     
     @property
@@ -405,7 +409,7 @@ class InfiniteDetector(Detector):
         """
         spot_size = self._spot_size(RayList, Points, Basis)
         delay_std = self._delay_std(RayList, Points, Basis)
-        return spot_size * delay_std
+        return spot_size**2 * delay_std
 
     # %% Detector response methods 
     def get_3D_points(self, RayList) -> list[np.ndarray]:
@@ -471,11 +475,11 @@ class InfiniteDetector(Detector):
         ----------
             DelayList : list[float]
         """
-        XYZ = self.get_2D_points(RayList)[0]._add_dimension().from_basis(*self.basis)
-        StartingPoints = mgeo.PointArray([k.point for k in RayList])
+        localRayList = RayList.to_basis(*self.basis)
+        paths = np.sum(RayList.path, axis=1)
+        StartingPoints = mgeo.PointArray([k.point for k in localRayList])
+        XYZ = mgeo.IntersectionRayListZPlane(localRayList)[0]._add_dimension()
         LastDistances = (XYZ - StartingPoints).norm
-        PreviousDistances = np.array([np.array(k.path) for k in RayList])
-        Distances = np.hstack((PreviousDistances, LastDistances[:, np.newaxis]))
-        TotalPaths = np.sum(Distances, axis=1)
+        TotalPaths =  paths+LastDistances
         MeanPath = np.mean(TotalPaths)
         return list((TotalPaths-MeanPath) / LightSpeed * 1e15) # in fs

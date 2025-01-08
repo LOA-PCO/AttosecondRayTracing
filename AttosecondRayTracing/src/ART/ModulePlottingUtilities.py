@@ -10,6 +10,7 @@ Created in November 2024
 import weakref
 import numpy as np
 import colorcet as cc
+import matplotlib.pyplot as plt
 
 import ARTcore.ModuleProcessing as mp
 import ARTcore.ModuleGeometry as mgeo
