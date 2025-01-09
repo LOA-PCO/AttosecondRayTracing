@@ -45,9 +45,10 @@ pdoc.render.configure(
 pdoc.render_helpers.formatter.cssclass = "chroma pdoc-code"
 
 modules = [
-    "ARTmain",
     "ModuleAnalysisAndPlots",
     "ModulePlottingMethods",
+    "ModulePlottingUtilities",
+    "ModuleTolerancing",
     "ModuleAnalysis"
 ]
 prefix = "../AttosecondRayTracing/src/ART/"
