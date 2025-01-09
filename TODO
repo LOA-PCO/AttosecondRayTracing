@@ -1,0 +1,13 @@
+What needs to be done:
+
+- Rewrite rest of examples
+- Implement automatic plot dispatching.
+- Add tolerancing to ART package
+- Add callbacks to ray-tracing and to other functions such as detector optimisation
+- Implement polychromatic wavefront extraction
+- Implement polarisation assuming paraxiality
+- Fix ellipsoidal mirror. For starters, the magic isn't always working (f_img=f_obj example). And the rendering is weird...
+- Change run_ART and add it to setup.py so that we can run ART directly as a command
+- Add unit test suite with simple setups?
+- Add simple grating
+- Add report printing to ART package

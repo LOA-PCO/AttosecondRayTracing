@@ -6,6 +6,7 @@ on:
   push:
     branches:
       - main
+      - dev
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -49,6 +50,13 @@ jobs:
         uses: actions/configure-pages@v3
       - name: Install Node.js dependencies
         run: "[[ -f package-lock.json || -f npm-shrinkwrap.json ]] && npm ci || true && npm install -g postcss-cli && npm install --prefix docs/src autoprefixer "
+      - name: Create venv
+        run: "python3 -m venv venv; source venv/bin/activate"
+      - name: Install Python dependencies
+        run: "pip install --upgrade pip; pip install -e AttosecondRayTracing_core; pip install -e AttosecondRayTracing; pip install pdoc"
+      - name: Compile API doc using build.py script
+        run: |
+          cd docs; python3 build.py; cd ..
       - name: Build with Hugo
         env:
           # For maximum backward compatibility with Hugo modules

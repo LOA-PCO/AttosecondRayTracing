@@ -10,15 +10,15 @@ version = {attr = "package_name.__version__"}
 
 [project]
 name = "AttosecondRayTracing"
-version = "0.92"
+version = "0.93"
 authors = [
-  { name="Stefan Haessler", email="stefan.haessler@ensta-paris.fr" },
-  { name="André Kalouguine", email="andre.kalouguine@ensta-paris.fr" },
+  { name="Stefan Haessler", email="stefan.haessler@ensta.fr" },
+  { name="André Kalouguine", email="andre.kalouguine@ensta.fr" },
   { name="Anthony Guillaume"}
 ]
 description = "Attosecond Ray Tracing visualisation package"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 classifiers = [
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent",
@@ -26,4 +26,4 @@ classifiers = [
 dependencies= ["AttosecondRayTracing_core", "pyvista", "matplotlib", "pyvistaqt", "colorcet"]
 
 [project.urls]
-Homepage = "https://github.com/mightymightys/AttosecondRaytracing"
+Homepage = "https://github.com/LOA-PCO/AttosecondRayTracing"
