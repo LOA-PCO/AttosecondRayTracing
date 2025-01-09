@@ -30,7 +30,7 @@ start_time = time.time()
 Spectrum = mos.UniformSpectrum(lambdaMin=30e-6, lambdaMax=800e-6)
 #Spectrum = mos.SingleWavelengthSpectrum(800e-6)
 PowerDistribution = mos.GaussianPowerDistribution(1, 2, 50e-3)
-Positions = mos.PointRayOriginsDistribution(mgeo.Origin)
+Positions = mos.DiskRayOriginsDistribution(mgeo.Origin,1)
 Directions = mos.ConeRayDirectionsDistribution(mgeo.Vector([1,0,0]), 50e-3)
 Source = mos.SimpleSource(Spectrum, PowerDistribution, Positions, Directions)
 

@@ -31,6 +31,7 @@ Spectrum = mos.UniformSpectrum(lambdaMin=30e-6, lambdaMax=800e-6)
 #Spectrum = mos.SingleWavelengthSpectrum(800e-6)
 PowerDistribution = mos.GaussianPowerDistribution(1, 2, 50e-3)
 Positions = mos.PointRayOriginsDistribution(mgeo.Origin)
+Positions = mos.DiskRayOriginsDistribution(mgeo.Origin,5, mgeo.Vector([1,0,0]))
 Directions = mos.ConeRayDirectionsDistribution(mgeo.Vector([1,0,0]), 50e-3)
 Source = mos.SimpleSource(Spectrum, PowerDistribution, Positions, Directions)
 
@@ -39,7 +40,7 @@ ChainDescription = "2 toroidal mirrors in f-d-f config, i.e. approx. collimation
 
 
 # %% Define the optical elements
-SupportMask = msupp.SupportRoundHole(Radius=30, RadiusHole=14/2, CenterHoleX=0, CenterHoleY=0) 
+SupportMask = msupp.SupportRoundHole(Radius=30, RadiusHole=30/2, CenterHoleX=0, CenterHoleY=0) 
 Mask = mmask.Mask(SupportMask)
 MaskSettings = {
     'OpticalElement' : Mask,

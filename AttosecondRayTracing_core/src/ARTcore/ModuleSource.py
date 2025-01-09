@@ -164,16 +164,18 @@ class DiskRayOriginsDistribution(RayOriginsDistribution):
     """
     Disk ray origins distribution. Uses the Vogel spiral to initialize the rays.
     """
-    def __init__(self, Origin, Radius):
+    def __init__(self, Origin, Radius, Normal = mgeo.Vector([0, 0, 1])):
         self.Origin = Origin
         self.Radius = Radius
+        self.Normal = Normal
 
     def __call__(self, N):
         """
         Return the origins of N rays.
         """
         MatrixXY = mgeo.SpiralVogel(N, self.Radius)
-        return mgeo.PointArray([self.Origin + mgeo.Vector([MatrixXY[i, 0], MatrixXY[i, 1], 0]) for i in range(N)])
+        q = mgeo.QRotationVector2Vector(mgeo.Vector([0, 0, 1]), self.Normal)
+        return mgeo.PointArray([self.Origin + mgeo.Vector([MatrixXY[i, 0], MatrixXY[i, 1], 0]) for i in range(N)]).rotate(q)
     
 # %% Specific ray directions distributions
 class UniformRayDirectionsDistribution(RayDirectionsDistribution):
