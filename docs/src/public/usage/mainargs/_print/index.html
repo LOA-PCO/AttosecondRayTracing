@@ -1,0 +1,387 @@
+<!doctype html>
+<html itemscope itemtype="http://schema.org/WebPage" lang="en" class="no-js">
+  <head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<link rel="canonical" type="text/html" href="//localhost:1313/usage/mainargs/">
+<meta name="robots" content="noindex, nofollow">
+
+
+<link rel="shortcut icon" href="/favicons/favicon.ico" >
+<link rel="apple-touch-icon" href="/favicons/apple-touch-icon-180x180.png" sizes="180x180">
+<link rel="icon" type="image/png" href="/favicons/favicon-16x16.png" sizes="16x16">
+<link rel="icon" type="image/png" href="/favicons/favicon-32x32.png" sizes="32x32">
+<link rel="icon" type="image/png" href="/favicons/android-36x36.png" sizes="36x36">
+<link rel="icon" type="image/png" href="/favicons/android-48x48.png" sizes="48x48">
+<link rel="icon" type="image/png" href="/favicons/android-72x72.png" sizes="72x72">
+<link rel="icon" type="image/png" href="/favicons/android-96x96.png" sizes="96x96">
+<link rel="icon" type="image/png" href="/favicons/android-144x144.png" sizes="144x144">
+<link rel="icon" type="image/png" href="/favicons/android-192x192.png" sizes="192x192">
+
+<title>Writing config file | </title>
+<meta name="description" content="See your project in action!
+">
+<meta property="og:url" content="//localhost:1313/usage/mainargs/">
+  <meta property="og:site_name" content="Attosecond Ray Tracing">
+  <meta property="og:title" content="Writing config file">
+  <meta property="og:description" content="See your project in action!">
+  <meta property="og:locale" content="en">
+  <meta property="og:type" content="website">
+
+  <meta itemprop="name" content="Writing config file">
+  <meta itemprop="description" content="See your project in action!">
+  <meta itemprop="wordCount" content="47">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Writing config file">
+  <meta name="twitter:description" content="See your project in action!">
+
+
+
+
+
+<link href="/scss/main.css" rel="stylesheet">
+
+<script
+  src="https://code.jquery.com/jquery-3.7.1.min.js"
+  integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g=="
+  crossorigin="anonymous"></script>
+<script defer
+  src="https://unpkg.com/lunr@2.3.9/lunr.min.js"
+  integrity="sha384-203J0SNzyqHby3iU6hzvzltrWi/M41wOP5Gu+BiJMz5nwKykbkUx8Kp7iti0Lpli"
+  crossorigin="anonymous"></script>
+<link rel="stylesheet" href="/css/prism.css"/>
+<link rel="stylesheet" href="/css/icons.css"/>
+
+
+
+  </head>
+  <body class="td-section">
+    <header>
+      <nav class="td-navbar js-navbar-scroll" data-bs-theme="dark">
+<div class="container-fluid flex-column flex-md-row">
+  <a class="navbar-brand" href="/"><span class="navbar-brand__logo navbar-logo"><svg viewBox="0 0 517.3847 44.051682" id="svg1" inkscape:version="1.3.2 (091e20ef0f, 2023-11-25, custom)" sodipodi:docname="logo.svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg"><sodipodi:namedview id="namedview1" pagecolor="#ffffff" bordercolor="#000000" borderopacity=".25" inkscape:showpageshadow="2" inkscape:pageopacity="0" inkscape:pagecheckerboard="0" inkscape:deskcolor="#d1d1d1" inkscape:document-units="mm" inkscape:zoom="2.5507739" inkscape:cx="157.79525" inkscape:cy="103.10596" inkscape:window-width="2048" inkscape:window-height="1208" inkscape:window-x="0" inkscape:window-y="0" inkscape:window-maximized="1" inkscape:current-layer="layer1"/><defs id="defs1"><linearGradient id="linearGradient25" inkscape:collect="always"><stop style="stop-color:#c430ff;stop-opacity:.65617132" offset="0" id="stop25"/><stop style="stop-color:#c430ff;stop-opacity:0" offset="1" id="stop26"/></linearGradient><linearGradient id="linearGradient9" inkscape:collect="always"><stop style="stop-color:#ff0077;stop-opacity:1" offset="0" id="stop10"/><stop style="stop-color:#ff0000;stop-opacity:.04000112" offset=".92000002" id="stop12"/><stop style="stop-color:#ff0000;stop-opacity:0" offset="1" id="stop11"/></linearGradient><linearGradient id="linearGradient2"><stop style="stop-color:#ff0000;stop-opacity:1" offset=".50814837" id="stop8"/><stop style="stop-color:#ff0000;stop-opacity:0" offset="1" id="stop9"/></linearGradient><linearGradient id="linearGradient6" inkscape:collect="always"><stop style="stop-color:#6d29c1;stop-opacity:0" offset="0" id="stop6"/><stop style="stop-color:#6d29c1;stop-opacity:1" offset="1" id="stop7"/></linearGradient><linearGradient id="linearGradient3" inkscape:collect="always"><stop style="stop-color:#ffffff;stop-opacity:0" offset="0" id="stop4"/><stop style="stop-color:#ffffff;stop-opacity:0" offset="1" id="stop5"/></linearGradient><linearGradient id="linearGradient2-1"><stop style="stop-color:#ff0000;stop-opacity:1" offset=".56710559" id="stop2"/><stop style="stop-color:#ff0000;stop-opacity:0" offset="1" id="stop3"/></linearGradient><radialGradient inkscape:collect="always" xlink:href="#linearGradient2" id="radialGradient3" cx="346.05423" cy="147.5085" fx="346.05423" fy="147.5085" r="3.7795277" gradientUnits="userSpaceOnUse"/><linearGradient inkscape:collect="always" xlink:href="#linearGradient3" id="linearGradient5" x1="-18.37451" y1="147.49962" x2="347.30569" y2="147.49962" gradientUnits="userSpaceOnUse" gradientTransform="translate(0,0.04157078)"/><linearGradient inkscape:collect="always" xlink:href="#linearGradient6" id="linearGradient7" x1="-18.37451" y1="147.49962" x2="347.30569" y2="147.49962" gradientUnits="userSpaceOnUse" gradientTransform="translate(0,0.04157078)"/><radialGradient inkscape:collect="always" xlink:href="#linearGradient9" id="radialGradient11" cx="346.05423" cy="147.5085" fx="346.05423" fy="147.5085" r="11.338583" gradientUnits="userSpaceOnUse" gradientTransform="matrix(0.38351172,0,0,1.3358994,213.33842,-49.548014)"/><radialGradient inkscape:collect="always" xlink:href="#linearGradient25" id="radialGradient26" cx="-283.62885" cy="146.70834" fx="-283.62885" fy="146.70834" r="184.62917" gradientTransform="matrix(-1.6036288,0,0,-0.057004,-112.72151,155.71574)" gradientUnits="userSpaceOnUse"/></defs><g inkscape:label="Layer 1" inkscape:groupmode="layer" id="layer1" transform="translate(-5.798192,-125.51535)"><text style="font-size:42.6667px;font-family:latin modern roman;-inkscape-font-specification:'Latin Modern Roman, ';fill:#fff;fill-opacity:1;stroke:#a12244;stroke-width:1.17165;stroke-dasharray:none;stroke-opacity:.703444" x="63.230106" y="158.52786" id="text3" transform="skewX(-20)"><tspan sodipodi:role="line" id="tspan3" x="63.230106" y="158.52786" style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-family:Monospace;-inkscape-font-specification:Monospace;fill:#fff;fill-opacity:1;stroke:#a12244;stroke-width:1.17165;stroke-dasharray:none;stroke-opacity:.703444">AttosecondRayTracing</tspan></text><path style="fill:url(#linearGradient5);stroke:url(#linearGradient7);stroke-width:3.77953;stroke-dasharray:none;stroke-opacity:.417285" d="m-18.37451 147.54119h365.6802" id="path1" sodipodi:nodetypes="cc"/><circle style="fill:url(#radialGradient11);stroke:none;stroke-width:3.77953;stroke-dasharray:none;stroke-opacity:.417285" id="circle7" cx="346.05423" cy="147.5085" r="15.118111"/><circle style="fill:url(#radialGradient3);stroke:none;stroke-width:3.77953;stroke-dasharray:none;stroke-opacity:.417285" id="path2" cx="346.05423" cy="147.5085" r="5.6692915"/><rect style="mix-blend-mode:darken;fill:url(#radialGradient26);stroke:none;stroke-width:18.669;stroke-dasharray:none;stroke-opacity:.417285" id="rect25" width="363.22308" height="22.677166" x="-19.275406" y="136.20261"/></g></svg></span><span class="navbar-brand__name"></span></a>
+  <div class="td-navbar-nav-scroll ms-md-auto" id="main_navbar">
+    <ul class="navbar-nav">
+      </ul>
+  </div>
+  <div class="d-none d-lg-block">
+    <div class="td-search td-search--offline">
+  <div class="td-search__icon"></div>
+  <input
+    type="search"
+    class="td-search__input form-control"
+    placeholder="Search this site…"
+    aria-label="Search this site…"
+    autocomplete="off"
+    
+    data-offline-search-index-json-src="/offline-search-index.json"
+    data-offline-search-base-href="/"
+    data-offline-search-max-results="10"
+  >
+</div>
+  </div>
+</div>
+</nav>
+    </header>
+    <div class="container-fluid td-outer">
+      <div class="td-main">
+        <div class="row flex-xl-nowrap">
+          <main class="col-12 col-md-9 col-xl-8 ps-md-5" role="main">
+            
+
+
+
+
+<div class="td-content">
+<div class="pageinfo pageinfo-primary d-print-none">
+<p>
+This is the multi-page printable view of this section.
+<a href="#" onclick="print();return false;">Click here to print</a>.
+</p><p>
+<a href="/usage/mainargs/">Return to the regular view of this page</a>.
+</p>
+</div>
+
+
+
+<h1 class="title">Writing config file</h1>
+<div class="lead">See your project in action!</div>
+
+
+
+
+    <ul>
+    
+  
+  
+  
+  
+
+  
+    
+    
+	
+<li>1: <a href="#pg-b99d42e1ecc9804666335c0b70f4e827">OpticalChainList</a></li>
+
+
+    
+  
+    
+    
+	
+<li>2: <a href="#pg-7215352f6a6f6b8ee8d648b7ba67f749">SourceProperties</a></li>
+
+
+    
+  
+    
+    
+	
+<li>3: <a href="#pg-5d5916033492e7515d735c5dd6c8b01b">DetectorOptions</a></li>
+
+
+    
+  
+    
+    
+	
+<li>4: <a href="#pg-11ff05d4e92e78883735c9df17a69cac">AnalysisOptions</a></li>
+
+
+    
+  
+
+    </ul>
+
+
+<div class="content">
+      
+
+<div class="pageinfo pageinfo-primary">
+<p>Some of these examples may be updated without warning</p>
+
+</div>
+
+<p>Whether using a config file or passing the arguments directly to <code>main()</code>, we need to build the objects to be passed to the program.
+These pages are a quick description of each parameter and how to build them.</p>
+
+</div>
+</div>
+
+
+  
+  
+  
+  
+
+  
+  
+
+  
+    
+    
+	
+    
+
+<div class="td-content" style="">
+    
+	<h1 id="pg-b99d42e1ecc9804666335c0b70f4e827">1 - OpticalChainList</h1>
+    
+	
+
+<div class="alert alert-primary" role="alert">
+<h4 class="alert-heading">Summary</h4>
+
+    Use the <code>OEPlacement()</code> function on a list of optical elements, a <code>SourceProperties</code> dictionnary, a list of distances and a list of incidence angles.
+
+</div>
+
+<h2 id="explanation">Explanation</h2>
+<p>The first argument of <code>main()</code> is <code>OpticalChainList</code>, a complete description of the optical setup that needs to be simulated. This includes the absolute positions and orientations of all the optical elements apart from the detector.</p>
+<p>Positionning these elements in 3D space by hand would be unnecessarily complicated. Instead, a utility function <code>OEPlacement()</code> has been written to allow you to automatically position these elements, provided you specify the distances between them and the incidence angle on each element.</p>
+<p>To position these elements, a prealignment is performed, much like with an alignment laser in real life. A single ray (the central ray within the actual light source) is cast and the Optical Elements are successively positionned in the path of that ray at the specified distance and incidence angle. A reflected ray is then calculated and the algorithm uses it to add the next Optical Element.</p>
+
+
+<div class="alert alert-info" role="alert">
+<h4 class="alert-heading">FYI</h4>
+
+    Using mirrors with deformations would previously skew the algorithm as the central ray would get randomly reflected by the deformation in the center of the mirror. This is no longer and issue as during prealignment in the <code>OEPlacement()</code> function, the mirror defects are automatically turned off.
+
+</div>
+
+<p>It&rsquo;s perfectly possible to modify the alignment after this prealignment procedure. See for instance 
+<a href="//examples/config_2toroidals_f-x-f/" title="Two identical toroidals in same plane of incidence">here</a>
+.</p>
+<h2 id="using-oeplacement">Using <code>OEPlacement()</code></h2>
+<p>To use <code>OEPlacement()</code> we logically need:</p>
+<ul>
+<li>A Python list of mirrors or masks to be positionned</li>
+<li>A source of light to be used for prealignment (a virtual HeNe laser) described by a <code>dict</code> (see 
+<a href="//usage/mainargs/sourceproperties/" title="SourceProperties">SourceProperties</a>
+)</li>
+<li>A list of distances between optics. The first value is the distance between source and first optic.</li>
+<li>A list of incidence angles of the central ray on the optical elements.</li>
+</ul>
+
+</div>
+
+
+
+    
+	
+  
+    
+    
+	
+    
+
+<div class="td-content" style="page-break-before: always">
+    
+	<h1 id="pg-7215352f6a6f6b8ee8d648b7ba67f749">2 - SourceProperties</h1>
+    
+	
+
+<div class="alert alert-primary" role="alert">
+<h4 class="alert-heading">Summary</h4>
+
+    <code>SourceProperties</code> is a python dictionnary
+
+</div>
+
+<p>Running the simulation requires describing the light source. The properties that need to be defined are the following:</p>
+<ul>
+<li><code>&quot;DeltaFT&quot;</code>: This is not actually a property of the light source. Indeed, in the simulation, all photons are considered to be emitted simultaneously in an infinitely short burst. This parameter is actually an analysis parameter, used to check whether the light rays after the optical system have a short enough temporal spread.</li>
+<li><code>&quot;Wavelength&quot;</code>: Similarly to <code>DeltaFT</code>, this is actually an analysis parameter that is used as a reference for the spatial spread of the light rays after the optical system. It can however be used in the future to make wavelength-dependent optics such as gratings.</li>
+<li><code>&quot;Divergence&quot;</code>: This is an actual propertany of the light source: it&rsquo;s the half-angle of the cone of light emitted by the source as illustrated below.</li>
+<li><code>&quot;SourceSize&quot;</code>: Again, a property of the light source. It&rsquo;s the diameter of the light source (considered to be a disc). If the light source is a point source, it should be set to 0.</li>
+<li><code>&quot;NumberRays&quot;</code>: The number of rays that the light source will cast and that will be used for the simulation.</li>
+</ul>
+<p><img src="/api/pointsource.svg" alt="Illustration of divergence of light source"></p>
+<p>Below we provide an example of a 5mm wide source of 80nm light with a 50mrad total divergence, casting 1000 rays and compared in the end to an Airy cylinder of 0.5 femtoseconds.</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-Python" data-lang="Python"><span style="display:flex;"><span><span style="color:#000">SourceProperties</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000;font-weight:bold">{</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#4e9a06">&#39;Divergence&#39;</span> <span style="color:#000;font-weight:bold">:</span> <span style="color:#0000cf;font-weight:bold">50e-3</span><span style="color:#ce5c00;font-weight:bold">/</span><span style="color:#0000cf;font-weight:bold">2</span><span style="color:#000;font-weight:bold">,</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#4e9a06">&#39;SourceSize&#39;</span> <span style="color:#000;font-weight:bold">:</span> <span style="color:#0000cf;font-weight:bold">5</span><span style="color:#000;font-weight:bold">,</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#4e9a06">&#39;Wavelength&#39;</span> <span style="color:#000;font-weight:bold">:</span> <span style="color:#0000cf;font-weight:bold">80e-6</span><span style="color:#000;font-weight:bold">,</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#4e9a06">&#39;DeltaFT&#39;</span>    <span style="color:#000;font-weight:bold">:</span> <span style="color:#0000cf;font-weight:bold">0.5</span><span style="color:#000;font-weight:bold">,</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#4e9a06">&#39;NumberRays&#39;</span> <span style="color:#000;font-weight:bold">:</span> <span style="color:#0000cf;font-weight:bold">1000</span>
+</span></span><span style="display:flex;"><span><span style="color:#000;font-weight:bold">}</span>
+</span></span></code></pre></div>
+</div>
+
+
+
+    
+	
+  
+    
+    
+	
+    
+
+<div class="td-content" style="page-break-before: always">
+    
+	<h1 id="pg-5d5916033492e7515d735c5dd6c8b01b">3 - DetectorOptions</h1>
+    
+	
+
+<div class="alert alert-primary" role="alert">
+<h4 class="alert-heading">Summary</h4>
+
+    <code>DetectorOptions</code> is a python dictionnary
+
+</div>
+
+<p>The detector is a virtual plane of infinite size which plays the role of a CCD. It can be positionned manually by specifying the position of a point on the detector and its normal vector. However, in the case of ART it made sense to make the positionning of the detector part of the main functionality of the code. Thus, the <code>main()</code> function accepts the <code>DetectorOptions</code> argument. This object allows the code to automatically position the virtual detection plane in the optimal spot. It&rsquo;s a Python dictionnary with the following possible attributes:</p>
+<ul>
+<li><code>&quot;ReflectionNumber&quot;</code>: This is the number of the optic after the which the detector will be positionned. In most cases that would be the final optic in the setup and we commonly use the Python shorthand for the index of the last element: -1</li>
+<li><code>&quot;ManualDetector&quot;</code>: Setting this to <code>True</code> would disable the automatic positionning of the detector and you would have to also specify <code>&quot;DetectorCentre&quot;</code> and <code>&quot;DetectorNormal&quot;</code>  to position it.</li>
+<li><code>&quot;AutoDetectorDistance&quot;</code>: If set to <code>True</code>, the algorithm will automatically optimize the detector position based on the <code>&quot;OptFor&quot;</code>, <code>&quot;MaxRaystoConsider&quot;</code> and <code>&quot;IntensityWeighted&quot;</code> options.</li>
+<li><code>&quot;DistanceDetector&quot;</code>: If <code>&quot;AutoDetectorDistance&quot;</code> is <code>True</code>, it will be the starting point for the optimisation. Otherwise, this will be the distance of the detector from the last optical element.</li>
+</ul>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-Python" data-lang="Python"><span style="display:flex;"><span><span style="color:#000">DetectorOptions</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000;font-weight:bold">{</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#4e9a06">&#39;ReflectionNumber&#39;</span> <span style="color:#000;font-weight:bold">:</span> <span style="color:#ce5c00;font-weight:bold">-</span><span style="color:#0000cf;font-weight:bold">1</span><span style="color:#000;font-weight:bold">,</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#4e9a06">&#39;ManualDetector&#39;</span> <span style="color:#000;font-weight:bold">:</span> <span style="color:#204a87;font-weight:bold">False</span><span style="color:#000;font-weight:bold">,</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#4e9a06">&#39;DistanceDetector&#39;</span> <span style="color:#000;font-weight:bold">:</span> <span style="color:#0000cf;font-weight:bold">76</span> <span style="color:#000;font-weight:bold">,</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#4e9a06">&#39;AutoDetectorDistance&#39;</span> <span style="color:#000;font-weight:bold">:</span> <span style="color:#204a87;font-weight:bold">True</span><span style="color:#000;font-weight:bold">,</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#4e9a06">&#39;OptFor&#39;</span> <span style="color:#000;font-weight:bold">:</span> <span style="color:#4e9a06">&#34;intensity&#34;</span>
+</span></span><span style="display:flex;"><span><span style="color:#000;font-weight:bold">}</span>
+</span></span></code></pre></div>
+</div>
+
+
+
+    
+	
+  
+    
+    
+	
+    
+
+<div class="td-content" style="page-break-before: always">
+    
+	<h1 id="pg-11ff05d4e92e78883735c9df17a69cac">4 - AnalysisOptions</h1>
+    
+	
+
+<div class="alert alert-primary" role="alert">
+<h4 class="alert-heading">Summary</h4>
+
+    <code>AnalysisOptions</code> is a python dictionnary
+
+</div>
+
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-Python" data-lang="Python"><span style="display:flex;"><span><span style="color:#000">DefaultAnalysisOptions</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000;font-weight:bold">{</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#4e9a06">&#34;verbose&#34;</span><span style="color:#000;font-weight:bold">:</span> <span style="color:#204a87;font-weight:bold">True</span><span style="color:#000;font-weight:bold">,</span>  <span style="color:#8f5902;font-style:italic"># print intermediate results and info in the console?</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#4e9a06">&#34;plot_Render&#34;</span><span style="color:#000;font-weight:bold">:</span> <span style="color:#204a87;font-weight:bold">False</span><span style="color:#000;font-weight:bold">,</span>  <span style="color:#8f5902;font-style:italic"># render optical elements and rays, and how many rays to render?</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#4e9a06">&#34;maxRaysToRender&#34;</span><span style="color:#000;font-weight:bold">:</span> <span style="color:#0000cf;font-weight:bold">150</span><span style="color:#000;font-weight:bold">,</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#4e9a06">&#34;DrawAiryAndFourier&#34;</span><span style="color:#000;font-weight:bold">:</span> <span style="color:#204a87;font-weight:bold">True</span><span style="color:#000;font-weight:bold">,</span>  <span style="color:#8f5902;font-style:italic"># Draw Airy spot and Fourier-limited duration in the following plots?</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#4e9a06">&#34;plot_SpotDiagram&#34;</span><span style="color:#000;font-weight:bold">:</span> <span style="color:#204a87;font-weight:bold">False</span><span style="color:#000;font-weight:bold">,</span>  <span style="color:#8f5902;font-style:italic"># produce an interactive spot diagram without color coding the spots?</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#4e9a06">&#34;plot_DelaySpotDiagram&#34;</span><span style="color:#000;font-weight:bold">:</span> <span style="color:#204a87;font-weight:bold">False</span><span style="color:#000;font-weight:bold">,</span>  <span style="color:#8f5902;font-style:italic"># produce an interactive spot diagram with ray delays color coded?</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#4e9a06">&#34;plot_IntensitySpotDiagram&#34;</span><span style="color:#000;font-weight:bold">:</span> <span style="color:#204a87;font-weight:bold">False</span><span style="color:#000;font-weight:bold">,</span>  <span style="color:#8f5902;font-style:italic"># produce an interactive spot diagram with ray intensities color coded?</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#4e9a06">&#34;plot_IncidenceSpotDiagram&#34;</span><span style="color:#000;font-weight:bold">:</span> <span style="color:#204a87;font-weight:bold">False</span><span style="color:#000;font-weight:bold">,</span>  <span style="color:#8f5902;font-style:italic"># produce an interactive spot diagram with ray incidence angles color coded?</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#4e9a06">&#34;plot_DelayGraph&#34;</span><span style="color:#000;font-weight:bold">:</span> <span style="color:#204a87;font-weight:bold">False</span><span style="color:#000;font-weight:bold">,</span>  <span style="color:#8f5902;font-style:italic"># produce an interactive spot diagram with delays in 3rd dimension?</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#4e9a06">&#34;plot_IntensityGraph&#34;</span><span style="color:#000;font-weight:bold">:</span> <span style="color:#204a87;font-weight:bold">False</span><span style="color:#000;font-weight:bold">,</span>  <span style="color:#8f5902;font-style:italic"># produce an interactive spot diagram with delays in 3rd dimension and ray intensities color coded?</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#4e9a06">&#34;plot_IncidenceGraph&#34;</span><span style="color:#000;font-weight:bold">:</span> <span style="color:#204a87;font-weight:bold">False</span><span style="color:#000;font-weight:bold">,</span>  <span style="color:#8f5902;font-style:italic"># produce an interactive spot diagram with delays in 3rd dimension and ray incidence angles color coded?</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#4e9a06">&#34;plot_DelayMirrorProjection&#34;</span><span style="color:#000;font-weight:bold">:</span> <span style="color:#204a87;font-weight:bold">False</span><span style="color:#000;font-weight:bold">,</span>  <span style="color:#8f5902;font-style:italic"># produce a plot of the ray delays at the detector projected onto the mirror surface?</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#4e9a06">&#34;plot_IntensityMirrorProjection&#34;</span><span style="color:#000;font-weight:bold">:</span> <span style="color:#204a87;font-weight:bold">False</span><span style="color:#000;font-weight:bold">,</span>  <span style="color:#8f5902;font-style:italic"># produce a plot of the ray intensities at the detector projected onto the mirror surface?</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#4e9a06">&#34;plot_IncidenceMirrorProjection&#34;</span><span style="color:#000;font-weight:bold">:</span> <span style="color:#204a87;font-weight:bold">False</span><span style="color:#000;font-weight:bold">,</span>  <span style="color:#8f5902;font-style:italic"># produce a plot of the ray incidence angles at the detector projected onto the mirror surface?</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#4e9a06">&#34;save_results&#34;</span><span style="color:#000;font-weight:bold">:</span> <span style="color:#204a87;font-weight:bold">True</span><span style="color:#000;font-weight:bold">,</span>  <span style="color:#8f5902;font-style:italic"># save the simulation results to disk, to analyse later</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#4e9a06">&#34;OEPointsToRender&#34;</span><span style="color:#000;font-weight:bold">:</span> <span style="color:#0000cf;font-weight:bold">2000</span><span style="color:#000;font-weight:bold">,</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#4e9a06">&#34;OEPointsScale&#34;</span><span style="color:#000;font-weight:bold">:</span> <span style="color:#0000cf;font-weight:bold">0.5</span><span style="color:#000;font-weight:bold">,</span>
+</span></span><span style="display:flex;"><span><span style="color:#000;font-weight:bold">}</span>
+</span></span></code></pre></div>
+</div>
+
+
+
+    
+	
+  
+
+
+
+          </main>
+        </div>
+      </div>
+      <footer class="td-footer row d-print-none">
+  <div class="container-fluid">
+    <div class="row mx-md-2">
+      <div class="td-footer__left col-6 col-sm-4 order-sm-1">
+        
+      </div><div class="td-footer__right col-6 col-sm-4 order-sm-3">
+        
+      </div><div class="td-footer__center col-12 col-sm-4 py-2 order-sm-2">
+        
+      </div>
+    </div>
+  </div>
+</footer>
+
+    </div>
+    <script src="/js/main.js"></script>
+<script src='/js/prism.js'></script>
+<script src='/js/tabpane-persist.js'></script>
+
+  </body>
+</html>

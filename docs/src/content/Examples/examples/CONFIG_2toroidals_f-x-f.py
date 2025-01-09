@@ -1,121 +1,116 @@
+# -*- coding: utf-8 -*-
 """
-Created in October 2020
+Created in Apr 2020
+Heavily modified in December 2024
 
-@author: Anthony Guillaume + Stefan Haessler
+@author: Stefan Haessler + Andre Kalouguine
 """
 #%% Modules
+import ARTcore.ModuleMirror as mmirror
+import ARTcore.ModuleSupport as msupp
+import ARTcore.ModuleProcessing as mp
+import ARTcore.ModuleMask as mmask
+import ARTcore.ModuleSource as mos
+import ARTcore.ModuleOpticalChain as moc
+import ARTcore.ModuleGeometry as mgeo
+import ARTcore.ModuleDetector as mdet
+import ART 
 
+import matplotlib.pyplot as plt
 import numpy as np
-import ART.ModuleMirror as mmirror
-import ART.ModuleSupport as msupp
-import ART.ModuleProcessing as mp
-import ART.ModuleMask as mmask
 
+# %% Source definition
+N_rays = 1000
 
-#%%########################################################################
-""" Source properties """
+Spectrum = mos.UniformSpectrum(lambdaMin=30e-6, lambdaMax=800e-6)
+PowerDistribution = mos.GaussianPowerDistribution(1, 2, 50e-3)
+Positions = mos.PointRayOriginsDistribution(mgeo.Origin)
+Directions = mos.ConeRayDirectionsDistribution(mgeo.Vector([1,0,0]), 50e-3)
+Source = mos.SimpleSource(Spectrum, PowerDistribution, Positions, Directions)
 
-SourceProperties = {
-    'Divergence' : 50e-3/2, # half-angle in rad
-    'SourceSize' : 0, # diameter in mm
-    'Wavelength' : 80e-6, # 40 nm
-    'DeltaFT'    : 0.5,   # in fs
-    'NumberRays' : 1000   # launch 1000 rays in the beginning 
+SourceRays = Source(N_rays)
+
+# %% Define the optical elements
+SupportMask = msupp.SupportRoundHole(Radius=30, RadiusHole=15, CenterHoleX=0, CenterHoleY=0) 
+Mask = mmask.Mask(SupportMask)
+MaskSettings = {
+    'OpticalElement' : Mask,
+    'Distance' : 400,
+    'IncidenceAngle' : 0,
+    'IncidencePlaneAngle' : 0,
+    'Description' : "Mask for selecting rays",
+    'Alignment' : 'support_normal',
 }
-
-#%%
-""" OPTICAL SETUP """
-""" first create a perfectly aligned optical chain as usual """
-Description = "2 toroidal mirrors in f-d-f config, i.e. approx. collimation, propagation, and the refocus "
-
-#% Mirrors
-Support = msupp.SupportRectangle(150, 32)
 
 Focal = 500
 AngleIncidence = 80 #in deg
 OptimalMajorRadius, OptimalMinorRadius = mmirror.ReturnOptimalToroidalRadii(Focal, AngleIncidence)
-ToroidalMirror = mmirror.MirrorToroidal(OptimalMajorRadius, OptimalMinorRadius, Support)
 
-# a mask
-#placed 400 after source, this selects 35mrad: 
-SupportMask = msupp.SupportRoundHole(Radius=20, RadiusHole=14/2, CenterHoleX=0, CenterHoleY=0) 
-Mask = mmask.Mask(SupportMask)
+SupportToroidal = msupp.SupportRectangle(150, 32)
 
-# create the optical chain
-OpticsList = [Mask, ToroidalMirror, ToroidalMirror]
-IncidenceAngleList = [0, AngleIncidence, -AngleIncidence] #in deg
-IncidencePlaneAngleList = [0, 0, 0]
-# loop over the distance between the 2 toroidal mirrors:
-DistanceList = [400, Focal-400, np.linspace(Focal-200, Focal+200, 11)] #one element is an array of values, so a list of optical chains will be created
-
-# produce a png-image of each of the varied optical chains ?
-render = False
-OpticalChainList =  mp.OEPlacement(SourceProperties, OpticsList, DistanceList, IncidenceAngleList, IncidencePlaneAngleList, Description, render)
-
-#OpticalChainList[0].quickshow()
-
-
-#%%
-""" detector parameters """
-
-DetectorOptions = {
-    'ReflectionNumber' : -1, # analyse ray bundle after last optical element
-    'ManualDetector' : False, # do not place the detector manually, i.e. let ART do it automatically
-    'DistanceDetector' : Focal ,  # set the detector at this distance from the last optical element
-    'AutoDetectorDistance' : True,  # search for the optimal detector distance and shift the detector there to use it for further analysis ?
-    'OptFor' : "intensity"   # metric for which to optimize the detector position
+ToroidalMirrorA = mmirror.MirrorToroidal(SupportToroidal, OptimalMajorRadius, OptimalMinorRadius)
+ToroidalASettings = {
+    'OpticalElement' : ToroidalMirrorA,
+    'Distance' : Focal-MaskSettings['Distance'],
+    'IncidenceAngle' : AngleIncidence,
+    'IncidencePlaneAngle' : 0,
+    'Description' : "First parabola for collimation",
 }
 
-#%%
-""" Analysis options """
-
-AnalysisOptions = {
-    'verbose': True,           # print intermediate results and info in the console?
-
-    'plot_Render': True,         # render optical elements and rays, and how many rays to render (more than 200 gets very slow)?
-    'maxRaysToRender': 150,
-
-    'DrawAiryAndFourier': True,    # Draw Airy spot and Fourier-limited duration in the following plots?
-    
-    'plot_SpotDiagram': False,          # produce an interactive spot diagram without color coding the spots?
-    'plot_DelaySpotDiagram': True,  # produce an interactive spot diagram with ray delays color coded?
-    'plot_IntensitySpotDiagram': False, # produce an interactive spot diagram with ray intensities color coded?
-    'plot_IncidenceSpotDiagram': False, # produce an interactive spot diagram with ray incidence angles color coded?
-
-    'plot_DelayGraph': False,        # produce an interactive spot diagram with delays in 3rd dimension?
-    'plot_IntensityGraph': False,     # produce an interactive spot diagram with delays in 3rd dimension and ray intensities color coded?
-    'plot_IncidenceGraph': False,    # produce an interactive spot diagram with delays in 3rd dimension and ray incidence angles color coded?
-
-    'plot_DelayMirrorProjection': False,      # produce a plot of the ray delays at the detector projected onto the surface of the preceding mirror?
-    'plot_IntensityMirrorProjection': False, # produce a plot of the ray intensities at the detector projected onto the surface of the preceding mirror?
-    'plot_IncidenceMirrorProjection': False,  # produce a plot of the ray incidence angles at the detector projected onto the surface of the preceding mirror?
-
-    'save_results': True        #save the simulation results to disk, to analyse later
+ToroidalMirrorB = mmirror.MirrorToroidal(SupportToroidal,OptimalMajorRadius, OptimalMinorRadius)
+ToroidalBSettings = {
+    'OpticalElement' : ToroidalMirrorB,
+    'Distance' : None,
+    'IncidenceAngle' : AngleIncidence,
+    'IncidencePlaneAngle' : 180,
+    'Description' : "First parabola for collimation",
 }
 
-#%%
-"""
-TO RUN A SIMULATION, TYPE IN AN ANACONDA-PROMPT (or equivalent):
-    python ARTmain.py <name_of_this_configuration_file>
-    
-    TO LOAD THE SAVED kept_data DICTIONARY FROM DISK AND USE IT FURTHER, DO
-    import ART.ModuleProcessing as mp
-    kept_data = mp.load_compressed(filename)
-    
-    
-IF WANT TO RUN THIS CONFIG-SCRIPT DIRECTLY, call the main function of the ARTmain.py-program from here:
-"""
-# from ARTmain import main
-# kept_data = main(OpticalChainList, SourceProperties, DetectorOptions, AnalysisOptions)
-    
-# #    THEN, YOU CAN PLOT RESULTS AGAINST e.g. THE LOOP-VARIABLE LIKE SO:
-# import matplotlib.pyplot as plt
-# fig, ax = plt.subplots()
-# ax.scatter([x.loop_variable_value for x in kept_data["OpticalChain"]], kept_data["DurationSD"])
-# ax.set_xlabel(kept_data["OpticalChain"][0].loop_variable_name)
-# ax.set_ylabel("DurationSD")
+Det = mdet.InfiniteDetector(-1)
+Detectors = {
+    "Focus": Det
+}
 
+ChainDescription = "2 toroidal mirrors in f-d-f config, i.e. approx. collimation, propagation, and the refocus "
 
+Distances = np.linspace(Focal-200, Focal+200, 20)
+FocalDistances = []
+FocalSizes = []
 
-from ARTmain import main
-kept_data = main(OpticalChainList, SourceProperties, DetectorOptions, AnalysisOptions)
+for d in Distances:
+    ToroidalBSettings['Distance'] = d
+    print(d)
+    AlignedOpticalElements = mp.OEPlacement([MaskSettings, ToroidalASettings, ToroidalBSettings])
+    AlignedOpticalChain = moc.OpticalChain(Source(1000), AlignedOpticalElements, Detectors, ChainDescription)
+    RayListAnalysed = AlignedOpticalChain.get_output_rays()[-1]
+    Det.autoplace(RayListAnalysed, 390)
+    Det.optimise_distance(RayListAnalysed, [200,600], Det._spot_size, maxiter=10, tol=1e-14)
+    FocalDistances.append(Det.distance)
+    DetectorPointList2D = AlignedOpticalChain.get2dPoints()
+    DetectorPointList2DCentre = DetectorPointList2D - np.mean(DetectorPointList2D, axis=0)
+    FocalSpotSizeSD = np.std(DetectorPointList2DCentre.norm)
+    FocalSizes.append(FocalSpotSizeSD)
+
+optimalDistance = Distances[np.argmin(FocalSizes)]
+
+fig, ax = plt.subplots()
+ax.plot(Distances, FocalSizes)
+ax.set_xlabel('Distance between PM and Toroidal B [mm]')
+ax.set_ylabel('Spot size [mm]')
+ax.scatter(optimalDistance, np.min(FocalSizes), color='red')
+plt.tight_layout()
+
+ToroidalBSettings['Distance'] = optimalDistance
+AlignedOpticalElements = mp.OEPlacement([MaskSettings, ToroidalASettings, ToroidalBSettings])
+AlignedOpticalChain = moc.OpticalChain(Source(5000), AlignedOpticalElements, Detectors, ChainDescription)
+rays= AlignedOpticalChain.get_output_rays()
+Det.autoplace(rays[-1], FocalDistances[np.argmin(FocalSizes)])
+Det.optimise_distance(rays[-1], [200,600], Det._spot_size, maxiter=10, tol=1e-14)
+
+AlignedOpticalChain.render(EndDistance=Det.distance+10, OEpoints=5000, cycle_ray_colors=True, impact_points=True, DetectedRays=True)
+AlignedOpticalChain.drawSpotDiagram(ColorCoded="Delay")
+AlignedOpticalChain.drawCaustics()
+
+print("Optimum found for following parameters:")
+print(AlignedOpticalChain)
+plt.show()
