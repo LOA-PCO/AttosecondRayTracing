@@ -621,7 +621,7 @@ def DrawSetup(OpticalChain,
     def move_detector(detname, new_value):
         nonlocal fig, detector_meshes, detectedpoint_meshes, DetectedRays, detectedpoint_meshes, detector_copies, OpticalChain
         det = detector_copies[detname]
-        index = OpticalChain.detectors[detname][1]
+        index = OpticalChain.detectors[detname].index
         det_mesh = detector_meshes[detname]
         translation = det.normal * (det.distance - new_value)
         det_mesh.translate(translation, inplace=True)

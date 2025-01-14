@@ -174,7 +174,7 @@ class OpticalChain:
         """
         return self.source_rays
 
-    def get_output_rays(self, **kwargs):
+    def get_output_rays(self, force=False, **kwargs):
         """
         Returns the list of (lists of) output rays, calculate them if this hasn't been done yet,
         or if the source-ray-bundle or anything about the optical elements has changed.
@@ -183,9 +183,7 @@ class OpticalChain:
         """
         current_source_rays_hash = hash(self.source_rays)
         current_optical_elements_hash = mp._hash_list_of_objects(self.optical_elements)
-        if (current_source_rays_hash != self._last_source_rays_hash) or (
-            current_optical_elements_hash != self._last_optical_elements_hash
-        ):
+        if (current_source_rays_hash != self._last_source_rays_hash) or (current_optical_elements_hash != self._last_optical_elements_hash) or force:
             print("...ray-tracing...", end="", flush=True)
             self._output_rays = mp.RayTracingCalculation(self.source_rays, self.optical_elements, **kwargs)
             print(
