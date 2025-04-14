@@ -1,6 +1,7 @@
 docs/src/content/ARTAPI/
 docs/src/content/ARTcoreAPI/
 docs/pdoc/output/
+docs/src/public/
 
 #my helper batch-scripts
 *.bat

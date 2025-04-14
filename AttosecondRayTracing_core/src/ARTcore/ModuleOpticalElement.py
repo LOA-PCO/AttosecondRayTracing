@@ -84,6 +84,9 @@ class OpticalElement(ABC):
     # %% Starting 3d orientation definition
     _description = "Generic Optical Element"
 
+    def __hash__(self):
+        return super().__hash__()+hash(self._r)+hash(self._q)
+
     @property
     def description(self):
         """
@@ -282,7 +285,7 @@ class OpticalElement(ABC):
             distance : float
                 Shift distance in mm.
         """
-        self.position = self.position +  distance * self.support_normal
+        self.r = self.r +  distance * self.support_normal
 
     def shift_along_major(self, distance):
         """
@@ -293,7 +296,7 @@ class OpticalElement(ABC):
             distance : float
                 Shift distance in mm.
         """
-        self.position = self.position +  distance * self.majoraxis
+        self.r = self.r +  distance * self.majoraxis
 
     def shift_along_cross(self, distance):
         """
@@ -305,7 +308,7 @@ class OpticalElement(ABC):
             distance : float
                 Shift distance in mm.
         """
-        self.position = self.position +  distance * mgeo.Normalize(np.cross(self.support_normal, self.majoraxis))
+        self.r = self.r +  distance * mgeo.Normalize(np.cross(self.support_normal, self.majoraxis))
 
     def shift_along_random(self, distance):
         """
@@ -316,4 +319,4 @@ class OpticalElement(ABC):
             distance : float
                 Shift distance in mm.
         """
-        self.position = self.position + distance * mgeo.Normalize(np.random.random(3))
+        self.r = self.r + distance * mgeo.Normalize(np.random.random(3))

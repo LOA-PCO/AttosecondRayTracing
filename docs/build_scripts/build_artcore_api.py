@@ -45,7 +45,6 @@ pdoc.render.configure(
 pdoc.render_helpers.formatter.cssclass = "chroma pdoc-code"
 
 modules = [
-    # "DefaultOptions",
     "ModuleDetector",
     "ModuleGeometry",
     "ModuleMask",
@@ -56,6 +55,7 @@ modules = [
     "ModuleProcessing",
     "ModuleSource",
     "ModuleSupport",
+    "ModuleSurface",
     "ModuleDefects",
 ]
 prefix = "../AttosecondRayTracing_core/src/ARTcore/"

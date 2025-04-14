@@ -346,7 +346,7 @@ class MirrorParabolic(Mirror):
         MirrorParabolic.get_grid3D(NbPoints)
 
     """
-    vectorised = True
+    #vectorised = True # Unitl I fix the closest solution thing
     def __init__(self, Support,
                 FocalEffective: float=None,
                 OffAxisAngle: float = None,
@@ -416,8 +416,9 @@ class MirrorParabolic(Mirror):
 
         Solution = mgeo.SolverQuadratic(da, db, dc)
         Solution = mgeo.KeepPositiveSolution(Solution)
-        Solution = min(t for t in Solution if t > 0)
-        IntersectionPoint = Ray.point + Ray.vector * Solution
+        IntersectionPoint = [Ray.point + Ray.vector * t for t in Solution if t > 0]
+        distances = [mgeo.Vector(i - self.r0).norm for i in IntersectionPoint]
+        IntersectionPoint = IntersectionPoint[distances.index(min(distances))]
         return IntersectionPoint, IntersectionPoint-self.r0 in self.support
     
     def _get_intersections(self, RayList):
@@ -445,8 +446,8 @@ class MirrorParabolic(Mirror):
         SolutionsPlus = (-db + np.sqrt(Deltas)) / 2 / da
         SolutionsMinus = (-db - np.sqrt(Deltas)) / 2 / da
         SolutionsPlus[unstable] = dc[unstable] / (da[unstable] * SolutionsMinus[unstable])
-        SolutionsPlus = np.where(SolutionsPlus >= 0, SolutionsPlus, np.infty)
-        SolutionsMinus = np.where(SolutionsMinus >= 0, SolutionsMinus, np.infty)
+        SolutionsPlus = np.where(SolutionsPlus >= 0, SolutionsPlus, np.inf)
+        SolutionsMinus = np.where(SolutionsMinus >= 0, SolutionsMinus, np.inf)
         Solutions = np.minimum(SolutionsPlus, SolutionsMinus)
         Solutions = np.maximum(Solutions, 0)
         Points = points + vectors * Solutions[:,np.newaxis]
