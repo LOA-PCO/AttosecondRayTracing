@@ -70,7 +70,7 @@ jobs:
       - name: List
         run: "ls docs/src"
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-pages-artifact@v3
         with:
           path: docs/src/public
 
