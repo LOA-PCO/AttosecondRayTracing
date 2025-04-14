@@ -25,7 +25,7 @@ A quickstart documentation will very soon (promised ;-) be added in the followin
 
 ## Dependencies
 
-The code requires Python 3.6 or newer and depends on the libraries [NumPy](https://numpy.org), 
+The code requires Python 3.9 or newer and depends on the libraries [NumPy](https://numpy.org), 
 [Numpy-Quaternion](https://github.com/moble/quaternion),  [matplotlib](https://matplotlib.org),
 and for 3D-rendering of optical configurations and rays,  [PyVista](https://github.com/pyvista/pyvista).
 
@@ -53,22 +53,15 @@ ou can clone the repository like so:
 git clone https://github.com/mightymightys/AttosecondRaytracing.git
 ```
 
-You are welcome to fork the code and contribute to its further development
+You are welcome to fork the code and contribute to its further development.
 
 
 ## Running ART 
 
-To run ART, you run the appropriately named ***ARTmain.py*** in the console, supplying a
-configuration-file as an argument, like so:
-  
-    python ARTmain.py CONFIG_xxxx.py
+To run ART, you run a configuration script, written itself in python. 
+The user is responsible for ensuring that it doesn’t contain any harmful code.
+Examples and a template for such a configuration scipts are provided in ***examples\CONFIG_*.py***. 
+Running, exploring and adapting these examples should get any user up and runnign fairly quickly.
 
-The configuration file is itself written in python, and the user is responsible for enuring
-that it doesn’t contain any harmful code. A template for such a configuration file is given
-by ***CONFIG_template.py*** and a number of example configurations files are provided to
-be tried, explored and adapted.
-
-Alternatively, the user may use the configuration file as a launch script, and run the
-main program as indicated at the end of the template and example configuration files.
-This is practicle, e.g., when writing the configuration file in an IDE like *Spyder*, which
-features an IPython-console and let the user run the configuration directly.
+The configuration scripts can be run directly in an IDE like *Spyder* with an IPython-console,
+but also directly from the command line. 
