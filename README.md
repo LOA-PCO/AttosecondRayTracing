@@ -50,7 +50,7 @@ You can just download the code as a zip file from here. Or if you are using the 
 ou can clone the repository like so:
 
 ```Shell
-git clone https://github.com/mightymightys/AttosecondRaytracing.git
+git clone https://github.com/LOA-PCO/AttosecondRayTracing.git 
 ```
 
 You are welcome to fork the code and contribute to its further development.
