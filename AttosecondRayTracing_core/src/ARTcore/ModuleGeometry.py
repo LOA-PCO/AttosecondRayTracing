@@ -149,6 +149,7 @@ class PointArray(np.ndarray):
         return PointArray(np.concatenate((self, values), axis=1))
     
 Origin = Point([0,0,0])
+
 # %% More traditional vector operations that don't belong in the classes
 def Normalize(vector):
     """

@@ -302,7 +302,7 @@ def GetPlaneWaveFocus(OpticalChain, Detector = "Focus", size=None, Nrays=1000, r
     """
     This function calculates the approximate polychromatic focal spot of a set of rays.
     To do so, it positions itself in the detector plane and samples a square area.
-    If the size of the area is not given, it will use twice the Airy radius of the system with the largest wavbelength.
+    If the size of the area is not given, it will use twice the Airy radius of the system with the largest wavelength.
     Otherwise it uses the size.
     The resolution of the sampling is given by the resolution parameter. So it samples on a grid resolution x resolution.
 

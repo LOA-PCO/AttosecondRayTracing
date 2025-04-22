@@ -17,7 +17,6 @@ import logging
 
 import ARTcore.ModuleProcessing as mp
 import ARTcore.ModuleGeometry as mgeo
-from ARTcore.ModuleGeometry import Point, Vector, Origin
 import ARTcore.ModuleOpticalRay as mray
 import ARTcore.ModuleOpticalElement as moe
 import ARTcore.ModuleDetector as mdet
@@ -45,6 +44,7 @@ class OpticalChain:
 
     The class also provides methods for (mis-)alignment of the source-[Ray](ModuleOpticalRay.html)-bundle and the
     [OpticalElements](ModuleOpticalElement.html).
+    
     Attributes
     ----------
         source_rays : list[mray.Ray]
@@ -63,8 +63,6 @@ class OpticalChain:
         copy_chain()
 
         get_output_rays()
-
-        quickshow()
 
         render()
 
@@ -100,7 +98,7 @@ class OpticalChain:
 
         """
         self.source_rays = copy.deepcopy(source_rays)
-        # deepcopy so this object doesn't get changed when the global source_rays changes "outside"
+        # deepcopy so this object doesn't get changed when the global source_rays change "outside"
         self.optical_elements = copy.deepcopy(optical_elements)
         # deepcopy so this object doesn't get changed when the global optical_elements changes "outside"
         self.detectors = detectors

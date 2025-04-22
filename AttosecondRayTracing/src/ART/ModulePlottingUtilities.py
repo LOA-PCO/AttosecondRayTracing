@@ -119,7 +119,10 @@ def _getDetectorPoints(RayListAnalysed, Detector) -> tuple[np.ndarray, np.ndarra
     Y = Points2D[0][:,1] * 1e3 # To convert to µm
 
     FocalSpotSize = float(mgeo.DiameterPointArray(Points2D[0]))
-    SpotSizeSD = mp.StandardDeviation(Points2D[0])
+    
+    IntensityList = [k.intensity for k in RayListAnalysed]
+    SpotSizeSD = mp.WeightedStandardDeviation(Points2D[0],IntensityList)
+    #SpotSizeSD = mp.StandardDeviation(Points2D[0])
     return X, Y, FocalSpotSize, SpotSizeSD
 
 def show():

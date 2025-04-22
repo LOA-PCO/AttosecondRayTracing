@@ -142,7 +142,9 @@ def DrawSpotDiagram(OpticalChain,
             addLine = ""
         case "Delay":
             DelayList = movingDetector.get_Delays(RayListAnalysed)
-            DurationSD = mp.StandardDeviation(DelayList)
+            IntensityList = [k.intensity for k in RayListAnalysed]
+            DurationSD = mp.WeightedStandardDeviation(DelayList,IntensityList)
+            #DurationSD = mp.StandardDeviation(DelayList)
             z = np.asarray(DelayList)
             zlabel = "Delay (fs)"
             title = "Delay + Spot Diagram\n press left/right to move detector position"
@@ -215,7 +217,8 @@ def DrawSpotDiagram(OpticalChain,
 
         if ColorCoded == "Delay":
             newDelayList = np.asarray(movingDetector.get_Delays(RayListAnalysed))
-            newDurationSD = mp.StandardDeviation(newDelayList)
+            newDurationSD = mp.WeightedStandardDeviation(newDelayList,IntensityList)
+            #newDurationSD = mp.StandardDeviation(newDelayList)
             newaddLine = "\n" + "{:.2f}".format(newDurationSD) + " fs SD"
             foo.set_array(newDelayList)
             foo.set_clim(min(newDelayList), max(newDelayList))

@@ -2,7 +2,7 @@
 Provides a definition of sources of light.
 A source can be either a composite source (a sum of sources) or a simple source.
 A simple source is defined by 4 parameters:
-- Spectrum
+- Wavelength (monochromatic)
 - Angular power distribution
 - Ray origins distribution
 - Ray directions distribution
@@ -19,7 +19,6 @@ Created in 2019
 # %% Modules
 import ARTcore.ModuleOpticalRay as mray
 import ARTcore.ModuleGeometry as mgeo
-from ARTcore.ModuleGeometry import Point, Vector, Origin
 import ARTcore.ModuleProcessing as mp
 
 from ARTcore.DepGraphDefinitions import UniformSpectraCalculator
@@ -88,7 +87,15 @@ class Spectrum(ABC):
 # %% Specific power distributions
 class SpatialGaussianPowerDistribution(PowerDistribution):
     """
-    Spatial Gaussian power distribution.
+    Spatial Gaussian power distribution, depending only on ray origin points, and not on directions. 
+    
+    Attributes
+    ----------
+        Power : float
+            Peak power of the distribution in arbitrary units (user can keep track of their own units.)
+
+        W0 : float
+            1/e^2 beam waist in mm     
     """
     def __init__(self, Power, W0):
         self.Power = Power
@@ -98,12 +105,34 @@ class SpatialGaussianPowerDistribution(PowerDistribution):
         """
         Return the power of the rays coming 
         from the origin points Origins to the directions Directions.
+        
+        Parameters
+        ----------
+            Origins : mgeo.PointArray 
+               PointArray as defined in ModuleGeometry, with points of origin of the rays.
+
+            Directions : mgeo.VectorArray
+                VectorArray as defined in ModuleGeometry, with ray vectors.
+
+        Returns
+        -------
+            Powers: numpy.array
+                Array of powers for each ray.
+        
         """
         return self.Power * np.exp(-2 * np.linalg.norm(Origins, axis=1) ** 2 / self.W0 ** 2)
     
 class AngularGaussianPowerDistribution(PowerDistribution):
     """
-    Angular Gaussian power distribution.
+    Angular Gaussian power distribution, depending only on ray directions, but not origin points. 
+    
+    Attributes
+    ----------
+        Power : float
+            Peak power of the distribution in arbitrary units (user can keep track of their own units.)
+
+        Divergence : float
+            1/e^2 divergence half-angle in radians.
     """
     def __init__(self, Power, Divergence):
         self.Power = Power
@@ -113,12 +142,37 @@ class AngularGaussianPowerDistribution(PowerDistribution):
         """
         Return the power of the rays coming 
         from the origin points Origins to the directions Directions.
+        
+        Parameters
+        ----------
+            Origins : mgeo.PointArray 
+               PointArray as defined in ModuleGeometry, with points of origin of the rays.
+
+            Directions : mgeo.VectorArray
+                VectorArray as defined in ModuleGeometry, with ray vectors.
+
+        Returns
+        -------
+            Powers: numpy.array
+                Array of powers for each ray.
+        
         """
         return self.Power * np.exp(-2 * np.arccos(np.dot(Directions, [0, 0, 1])) ** 2 / self.Divergence ** 2)
 
 class GaussianPowerDistribution(PowerDistribution):
     """
-    Gaussian power distribution.
+    Gaussian power distribution, depending on ray origin points and directions.
+    
+    Attributes
+    ----------
+        Power : float
+            Peak power of the distribution in arbitrary units (user can keep track of their own units.)
+
+        W0 : float
+            1/e^2 beam waist in mm            
+
+        Divergence : float
+            1/e^2 divergence half-angle in radians.
     """
     def __init__(self, Power, W0, Divergence):
         self.Power = Power
@@ -129,6 +183,20 @@ class GaussianPowerDistribution(PowerDistribution):
         """
         Return the power of the rays coming 
         from the origin points Origins to the directions Directions.
+        
+        Parameters
+        ----------
+            Origins : mgeo.PointArray 
+               PointArray as defined in ModuleGeometry, with points of origin of the rays.
+
+            Directions : mgeo.VectorArray
+                VectorArray as defined in ModuleGeometry, with ray vectors.
+
+        Returns
+        -------
+            Powers: numpy.array
+                Array of powers for each ray.
+        
         """
         return self.Power * np.exp(-2 * (Origins-mgeo.Origin).norm ** 2 / self.W0 ** 2) * np.exp(-2 * np.array(np.arccos(np.dot(Directions, mgeo.Vector([1, 0, 0])))) ** 2 / self.Divergence ** 2)
 
@@ -227,7 +295,7 @@ class SingleWavelengthSpectrum(Spectrum):
 class UniformSpectrum(Spectrum):
     """
     Uniform spectrum.
-    Can be specified as a r
+    Can be specified as any combination of min, max, central or width in either eV or nm.
     """
     def __init__(self, eVMax = None, eVMin = None, eVCentral = None, 
                  lambdaMax = None, lambdaMin = None, lambdaCentral = None, 
@@ -255,15 +323,15 @@ class UniformSpectrum(Spectrum):
 # %% Simple sources
 class SimpleSource(Source):
     """
-    A simple source is defined by 4 parameters:
-    - Spectrum
+    A simple monochromatic source defined by 4 parameters:
+    - Wavelength (in nm)
     - Power distribution
     - Ray origins distribution
     - Ray directions distribution
     """
 
-    def __init__(self, Spectrum, PowerDistribution, RayOriginsDistribution, RayDirectionsDistribution):
-        self.Spectrum = Spectrum
+    def __init__(self, Wavelength, PowerDistribution, RayOriginsDistribution, RayDirectionsDistribution):
+        self.Wavelength = Wavelength
         self.PowerDistribution = PowerDistribution
         self.RayOriginsDistribution = RayOriginsDistribution
         self.RayDirectionsDistribution = RayDirectionsDistribution
@@ -272,13 +340,15 @@ class SimpleSource(Source):
         """
         Return a list of N rays from the simple source.
         """
-        Wavelengths = self.Spectrum(N)
         Origins = self.RayOriginsDistribution(N)
+        rng = np.random.default_rng()
+        rng.shuffle(Origins)
         Directions = self.RayDirectionsDistribution(N)
         Powers = self.PowerDistribution(Origins, Directions)
+        
         RayList = []
         for i in range(N):
-            RayList.append(mray.Ray(Origins[i], Directions[i], wavelength=Wavelengths[i], number=i, intensity=Powers[i]))
+            RayList.append(mray.Ray(Origins[i], Directions[i], wavelength=self.Wavelength, number=i, intensity=Powers[i]))
         return mray.RayList.from_list(RayList)
 
 
