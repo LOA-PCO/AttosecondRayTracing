@@ -50,7 +50,7 @@ You can just download the code as a zip file from here. Or if you are using the 
 ou can clone the repository like so:
 
 ```Shell
-git clone https://github.com/mightymightys/AttosecondRaytracing.git
+git clone https://github.com/LOA-PCO/AttosecondRayTracing.git 
 ```
 
 You are welcome to fork the code and contribute to its further development.
@@ -61,7 +61,7 @@ You are welcome to fork the code and contribute to its further development.
 To run ART, you run a configuration script, written itself in python. 
 The user is responsible for ensuring that it doesn’t contain any harmful code.
 Examples and a template for such a configuration scipts are provided in ***examples\CONFIG_x.py***. 
-Running, exploring and adapting these examples should get any user up and runnign fairly quickly.
+Running, exploring and adapting these examples should get any user up and running fairly quickly.
 
 The configuration scripts can be run directly in an IDE like *Spyder* with an IPython-console,
 but also directly from the command line. 
