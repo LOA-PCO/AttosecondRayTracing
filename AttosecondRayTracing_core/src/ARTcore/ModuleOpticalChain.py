@@ -20,7 +20,7 @@ import ARTcore.ModuleGeometry as mgeo
 import ARTcore.ModuleOpticalRay as mray
 import ARTcore.ModuleOpticalElement as moe
 import ARTcore.ModuleDetector as mdet
-import ARTcore.ModuleSource as msource
+#import ARTcore.ModuleSource as msource
 
 logger = logging.getLogger(__name__)
 

@@ -33,7 +33,13 @@ If you want to contribute to the development of ART or simply want to modify som
 
 For instance:
 ```Shell
-git clone https://github.com/mightymightys/AttosecondRaytracing.git
+git clone https://github.com/LOA-PCO/AttosecondRaytracing.git
+```
+Then install the two packages `ART` and `ARTcore` in editable mode:
+```Shell
+cd <AttosecondRaytracing-folder>
+pip install -e ./AttosecondRayTracing_core
+pip install -e ./AttosecondRayTracing
 ```
 
 ### Contributing
