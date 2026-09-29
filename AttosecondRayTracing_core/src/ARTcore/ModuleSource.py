@@ -330,7 +330,7 @@ class SimpleSource(Source):
     - Ray directions distribution
     """
 
-    def __init__(self, Wavelength, PowerDistribution, RayOriginsDistribution, RayDirectionsDistribution):
+    def __init__(self, Wavelength: float, PowerDistribution, RayOriginsDistribution, RayDirectionsDistribution):
         self.Wavelength = Wavelength
         self.PowerDistribution = PowerDistribution
         self.RayOriginsDistribution = RayOriginsDistribution

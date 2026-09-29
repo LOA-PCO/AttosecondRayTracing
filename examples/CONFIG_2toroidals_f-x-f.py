@@ -72,7 +72,7 @@ Detectors = {
     "Focus": Det
 }
 
-ChainDescription = "2 toroidal mirrors in f-d-f config, i.e. approx. collimation, propagation, and the refocus "
+ChainDescription = "2 toroidal mirrors in f-d-f config, i.e. approx. collimation, propagation, and then refocus "
 
 Distances = np.linspace(Focal-200, Focal+200, 20)
 FocalDistances = []

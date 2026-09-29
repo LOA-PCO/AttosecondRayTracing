@@ -23,21 +23,21 @@ import matplotlib.pyplot as plt
 from scipy.stats import linregress
 import ART.ModuleAnalysis as man
 import time
-start_time = time.time()
 
 
 #%%########################################################################
-Spectrum = mos.UniformSpectrum(lambdaMin=30e-6, lambdaMax=800e-6)
-#Spectrum = mos.SingleWavelengthSpectrum(800e-6)
+#Spectrum = mos.UniformSpectrum(lambdaMin=30e-6, lambdaMax=800e-6) #spectra don't work with mos.SimpleSource, which wants a single float for the wavelength
+#Spectrum = mos.SingleWavelengthSpectrum(800e-6) #spectra don't work with mos.SimpleSource, which wants a single float for the wavelength
+Wavelength = 50e-6
 PowerDistribution = mos.GaussianPowerDistribution(1, 2, 50e-3)
 Positions = mos.PointRayOriginsDistribution(mgeo.Origin)
 Directions = mos.ConeRayDirectionsDistribution(mgeo.Vector([1,0,0]), 50e-3)
-Source = mos.SimpleSource(Spectrum, PowerDistribution, Positions, Directions)
+Source = mos.SimpleSource(Wavelength, PowerDistribution, Positions, Directions)
 
 ChainDescription = "2 equal large-off-axis-angle parabolas for collimation and refocusing "
 
 # %% Define the optical elements
-SupportMask = msupp.SupportRoundHole(40, 5, 0, 0)
+SupportMask = msupp.SupportRoundHole(30, 6.25, 0, 0)
 Mask = mmask.Mask(SupportMask)
 MaskSettings = {
     'OpticalElement' : Mask,
@@ -49,7 +49,7 @@ MaskSettings = {
 }
 
 
-SupportCollimatingParabola = msupp.SupportRectangle(40,40)
+SupportCollimatingParabola = msupp.SupportRectangle(35,35)
 offAxisAngle = 150 #in deg
 FocalEffective = 400 # in mm
 CollimatingParabola = mmirror.MirrorParabolic(SupportCollimatingParabola, FocalEffective=FocalEffective, OffAxisAngle=offAxisAngle)
@@ -62,7 +62,7 @@ CollimatingParabolaSettings = {
     'Description' : "First parabola for collimation",
 }
 
-SupportPlane = msupp.SupportRound(40)
+SupportPlane = msupp.SupportRound(50.8)
 PlaneMirror = mmirror.MirrorPlane(SupportPlane)
 PlaneMirrorSettings = {
     'OpticalElement' : PlaneMirror,
@@ -73,46 +73,38 @@ PlaneMirrorSettings = {
     'Alignment' : 'support_normal',
 }
 
-SupportFocusingParabola = msupp.SupportRectangle(40,40)
+SupportFocusingParabola = msupp.SupportRectangle(35,35)
 offAxisAngle = 150 #in deg
 FocalEffective = 400 # in mm
 FocusingParabola = mmirror.MirrorParabolic(SupportFocusingParabola, FocalEffective=FocalEffective, OffAxisAngle=offAxisAngle)
 FocusingParabolaSettings = {
     'OpticalElement' : FocusingParabola,
     'Distance' : 300,
-    'IncidenceAngle' : 0e-2,
+    'IncidenceAngle' : 0.01,
     'IncidencePlaneAngle' : 0,
     'Description' : "Second parabola for refocusing",
     'Alignment' : 'support_normal',
 }
 
-Det = mdet.InfiniteDetector()
+Det = mdet.InfiniteDetector(-1)
 Detectors = {
-    "Focus": (Det, -1) # -1 means that the detector is placed at the last optical element
+    "Focus": Det
 }
 
-OpticsList = [MaskSettings,CollimatingParabolaSettings, PlaneMirrorSettings, FocusingParabolaSettings]
+OpticsList = [MaskSettings, CollimatingParabolaSettings, PlaneMirrorSettings, FocusingParabolaSettings]
 
 AlignedOpticalElements = mp.OEPlacement(OpticsList) # Align the optical elements
 
-AlignedOpticalChain = moc.OpticalChain(Source(1000), AlignedOpticalElements, Detectors, ChainDescription) # Create the optical chain
+AlignedOpticalChain = moc.OpticalChain(Source(2000), AlignedOpticalElements, Detectors, ChainDescription) # Create the optical chain
 
-AlignedOpticalChain.get_output_rays()
+#AlignedOpticalChain.rotate_OE(-1, "localnormal", "pitch", 0.005) # currently doesn't work >=/
 
 rays= AlignedOpticalChain.get_output_rays()
 
-Det.autoplace(rays[-1], 390)
-Det.optimise_distance(AlignedOpticalChain.get_output_rays()[-1], [200,600], Det._spot_size, maxiter=10, tol=1e-14)
-print("Optimisation took", time.time()-start_time, "s")
+Det.autoplace(rays[-1], 410)
+Det.optimise_distance(AlignedOpticalChain.get_output_rays()[-1], [200,600], Det._spot_size, maxiter=10, tol=1e-16)
 
 
-# AlignedOpticalChain.rotate_OE(1, "localnormal", "roll", 180)
-# AlignedOpticalChain.partial_realign(2,3, DistanceList[2:3], IncidenceAngleList[2:3], IncidencePlaneAngleList[2:3])
-
-#Detector = setup_detector(AlignedOpticalChain, DetectorOptions, AlignedOpticalChain.get_output_rays()[-1])
-#maap.SpotDiagram(AlignedOpticalChain.get_output_rays()[-1], Detector)
-#maap.SpotDiagram(AlignedOpticalChain, ColorCoded="Incidence", DrawAiryAndFourier=True)
-#maap.RayRenderGraph(AlignedOpticalChain, EndDistance=500, OEpoints=5000, cycle_ray_colors=True, impact_points=True, DetectedRays=True)
-#X,Y,Z = man.get_planewavefocus(AlignedOpticalChain, DetectorName="Focus", size=None, Nrays=1000, resolution=100)
-#plt.pcolormesh(X*1e3,Y*1e3,Z)
-#plt.show()
+AlignedOpticalChain.drawSpotDiagram()
+AlignedOpticalChain.render(EndDistance=500, OEpoints=5000, cycle_ray_colors=True, impact_points=True, DetectedRays=True)
+print(f"Beamline transmission: {round(AlignedOpticalChain.getETransmission(),3)}%")
